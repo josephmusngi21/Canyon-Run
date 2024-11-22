@@ -9,6 +9,8 @@ export default function Geolocation() {
   const [hasReachedEnd, setHasReachedEnd] = useState(false);
   const [startLocation, setStartLocation] = useState(null);
   const [endLocation, setEndLocation] = useState(null);
+  const [displayStart, setDisplayStart] = useState(true);
+  const [displayEnd, setDisplayEnd] = useState(true);
 
   useEffect(() => {
     const requestLocationPermission = async () => {
@@ -48,12 +50,12 @@ export default function Geolocation() {
     const distanceToStart = calculateDistance(coords, startLocation.coords);
     const distanceToEnd = calculateDistance(coords, endLocation.coords);
 
-    if (distanceToStart < 0.02 && !hasReachedStart) {
+    if (distanceToStart < 0.02 && !hasReachedStart) { // radius of starting point
       setHasReachedStart(true);
       Alert.alert("You are within 20 meters of the starting location");
     }
 
-    if (distanceToEnd < 0.02 && !hasReachedEnd) {
+    if (distanceToEnd < 0.02 && !hasReachedEnd) { // radius of ending point
       setHasReachedEnd(true);
       Alert.alert("You are within 20 meters of the ending location");
     }
@@ -82,12 +84,14 @@ export default function Geolocation() {
     return distance;
   };
 
-  const handlePress = async (title) => {
+  const handlePress = async (titlxe) => {
     let location = await Location.getCurrentPositionAsync({});
     if (title === 'Start') {
       setStartLocation(location);
+      setDisplayStart(false);
     } else if (title === 'End') {
       setEndLocation(location);
+      setDisplayEnd(false);
     }
   };
 
