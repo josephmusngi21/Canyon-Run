@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { StyleSheet, Text, View, Alert, Button } from "react-native";
 import * as Location from "expo-location";
+import Timer from './timer';
+
 
 export default function Geolocation() {
   const [locationGranted, setLocationGranted] = useState(false);
@@ -11,6 +13,8 @@ export default function Geolocation() {
   const [endLocation, setEndLocation] = useState(null);
   const [displayStart, setDisplayStart] = useState(true);
   const [displayEnd, setDisplayEnd] = useState(true);
+  const [timer, setTimer] = useState(new Timer());
+  const [runId, setRunId] = useState("");
 
   useEffect(() => {
     const requestLocationPermission = async () => {
@@ -52,11 +56,15 @@ export default function Geolocation() {
 
     if (distanceToStart < 0.02 && !hasReachedStart) { // radius of starting point
       setHasReachedStart(true);
+      timer.startTimer(); // Start the timer
+      setRunId(generateRunId()); // Generate and set a new runId
       Alert.alert("You are within 20 meters of the starting location");
     }
 
     if (distanceToEnd < 0.02 && !hasReachedEnd) { // radius of ending point
       setHasReachedEnd(true);
+      timer.endTimer(); // End the timer
+      saveRun(runId, timer.showCurrentTime()); // Save the runId and timer duration
       Alert.alert("You are within 20 meters of the ending location");
     }
   };
@@ -84,7 +92,7 @@ export default function Geolocation() {
     return distance;
   };
 
-  const handlePress = async (titlxe) => {
+  const handlePress = async (title) => {
     let location = await Location.getCurrentPositionAsync({});
     if (title === 'Start') {
       setStartLocation(location);
@@ -93,6 +101,15 @@ export default function Geolocation() {
       setEndLocation(location);
       setDisplayEnd(false);
     }
+  };
+
+  const generateRunId = () => {
+    return Math.random().toString(36).substr(2, 9); // Generate a random string for the runId
+  };
+
+  const saveRun = (id, duration) => {
+    // Implement the logic to save the runId and timer duration
+    console.log(`Run ID: ${id}, Duration: ${duration}`);
   };
 
   return (
