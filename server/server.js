@@ -85,14 +85,3 @@ app.listen(PORT, () => {
 
 // Call MongoDB connection function
 main();
-
-// Call Mongoose connection function
-function login() {
-    mongoose.connect(uri, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-    }).then(() => console.log("MongoDB is connected successfully"))
-      .catch(err => console.log(err));
-}
-
-login();
