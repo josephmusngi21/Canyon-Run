@@ -1,12 +1,12 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View } from 'react-native';
 import Geolocation from './components/Geolocation';
-import Register from './components/Register';
-import Login from './components/Login';
+// import Register from './components/Register/Register';
+// import Login from './components/Login/Login';
 import { useState } from 'react';
 
 export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
 
   const handleLogin = () => {
     setIsAuthenticated(true);
@@ -14,14 +14,15 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      {!isAuthenticated ? (
+      {/* {!isAuthenticated ? (
         <>
           <Login onLogin={handleLogin} />
           <Register />
         </>
       ) : (
         <Geolocation />
-      )}
+      )} */}
+      {/* <Geolocation /> */}
       <StatusBar style="auto" />
     </View>
   );
