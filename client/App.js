@@ -11,7 +11,6 @@ export default function App() {
   const handleLogin = () => {
     setIsAuthenticated(true);
   };
-
   return (
     <View style={styles.container}>
       {/* {!isAuthenticated ? (
