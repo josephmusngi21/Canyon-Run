@@ -7,7 +7,6 @@ import { useState } from 'react';
 
 import AddRun from './components/pages/Add/AddRun';
 
-<<<<<<< HEAD
 export default function App() {
   // const [isAuthenticated, setIsAuthenticated] = useState(true);
 
@@ -15,11 +14,6 @@ export default function App() {
   //   setIsAuthenticated(true);
   // };
 
-=======
-  const handleLogin = () => {
-    setIsAuthenticated(true);
-  };
->>>>>>> e37aba9355faf8e0f8a5fd59d7713b92c90b4836
   return (
     <View style={styles.container}>
       {/* {!isAuthenticated ? (
