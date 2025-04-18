@@ -6,6 +6,7 @@ import { StyleSheet, View } from 'react-native';
 import { useState } from 'react';
 
 import AddRun from './components/pages/Add/AddRun';
+import Maps from './components/pages/Maps/Maps';
 
 export default function App() {
   // const [isAuthenticated, setIsAuthenticated] = useState(true);
@@ -16,16 +17,15 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      {/* {!isAuthenticated ? (
-        <>
-          <Login onLogin={handleLogin} />
-          <Register />
-        </>
-      ) : (
-        <Geolocation />
-      )} */}
-      {/* <Geolocation /> */}
-        <AddRun />
+      <AddRun />
+      {(() => {
+        try {
+          return <Maps />;
+        } catch (error) {
+          console.error('Error rendering Maps:', error);
+          return null;
+        }
+      })()}
     </View>
   );
 }
