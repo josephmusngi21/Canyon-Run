@@ -3,6 +3,9 @@ import { useEffect, useState } from "react";
 import { MapContainer, TileLayer, Polyline } from "react-leaflet";
 import "leaflet/dist/leaflet.css";   //  using Leaflet for maps
 
+
+import mtLemon from './canyon.json'; // Example JSON data file
+
 export default function Maps() {
     // This file will grab a json data file from the server and plot it as a map
     // The json data file will be in the format of:
@@ -25,12 +28,17 @@ export default function Maps() {
     const [routeData, setRouteData] = useState(null);
     const [routeCoordinates, setRouteCoordinates] = useState([]);
 
+    // useEffect(() => {
+    //     // Fetch the JSON data from the server API endpoint
+    //     fetch("/api/getRouteData")
+    //         .then((response) => response.json())
+    //         .then((data) => setRouteData(data))
+    //         .catch((error) => console.error("Error fetching route data:", error));
+    // }, []);
+
+    // Use imported mtLemon data directly
     useEffect(() => {
-        // Fetch the JSON data from the server API endpoint
-        fetch("/api/getRouteData")
-            .then((response) => response.json())
-            .then((data) => setRouteData(data))
-            .catch((error) => console.error("Error fetching route data:", error));
+        setRouteData(mtLemon);
     }, []);
 
     if (!routeData) {
