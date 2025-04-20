@@ -7,6 +7,7 @@ import { useState } from 'react';
 
 import AddRun from './components/pages/Add/AddRun';
 import Maps from './components/pages/Maps/Maps';
+import Altitude from './components/pages/Maps/Altitude';
 
 export default function App() {
   // const [isAuthenticated, setIsAuthenticated] = useState(true);
@@ -17,7 +18,7 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      <AddRun />
+      {/* <AddRun />
       {(() => {
         try {
           return <Maps />;
@@ -25,7 +26,9 @@ export default function App() {
           console.error('Error rendering Maps:', error);
           return null;
         }
-      })()}
+      })()} */}
+      <Altitude />
+      <Maps />
     </View>
   );
 }
