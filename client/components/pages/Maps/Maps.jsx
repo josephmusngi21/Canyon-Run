@@ -1,65 +1,56 @@
 import React from "react";
-import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Polyline } from "react-leaflet";
-import "leaflet/dist/leaflet.css";   //  using Leaflet for maps
-
-
-import mtLemon from './canyon.json'; // Example JSON data file
+import exampleData from './canyon.json';
 
 export default function Maps() {
-    // This file will grab a json data file from the server and plot it as a map
-    // The json data file will be in the format of:
-    // {
-    //     "runName": "Example Run",
-    //     "coordinates": [
-    //         {
-    //             "longitude": -122.4194,
-    //             "latitude": 37.7749,
-    //             "altitude": 30
-    //         },
-    //         {
-    //             "longitude": -122.4195,
-    //             "latitude": 37.7750,
-    //             "altitude": 35
-    //         }
-    //     ]
-    // }
-    
-    const [routeData, setRouteData] = useState(null);
-    const [routeCoordinates, setRouteCoordinates] = useState([]);
+    const width = 600;
+    const height = 300;
+    const padding = 40;
 
-    // useEffect(() => {
-    //     // Fetch the JSON data from the server API endpoint
-    //     fetch("/api/getRouteData")
-    //         .then((response) => response.json())
-    //         .then((data) => setRouteData(data))
-    //         .catch((error) => console.error("Error fetching route data:", error));
-    // }, []);
+    const coordinates = exampleData.coordinates;
 
-    // Use imported mtLemon data directly
-    useEffect(() => {
-        setRouteData(mtLemon);
-    }, []);
+    // X: index, Y: latitude (or altitude)
+    const minIndex = 0;
+    const maxIndex = coordinates.length - 1;
+    const minLatitude = Math.min(...coordinates.map(p => p.latitude));
+    const maxLatitude = Math.max(...coordinates.map(p => p.latitude));
 
-    if (!routeData) {
-        return <p>Loading...</p>;
-    }
+    // Map index to x, latitude to y
+    const x = idx => padding + ((idx - minIndex) / (maxIndex - minIndex)) * (width - 2 * padding);
+    const y = latitude => height - padding - ((latitude - minLatitude) / (maxLatitude - minLatitude)) * (height - 2 * padding);
 
-    const coordinates = routeData.coordinates.map(coord => [coord.latitude, coord.longitude]);
+    const pathData = coordinates
+        .map((point, i) => {
+            const px = x(i);
+            const py = y(point.latitude);
+            return `${i === 0 ? 'M' : 'L'} ${px} ${py}`;
+        })
+        .join(' ');
 
     return (
-        <MapContainer center={coordinates[0]} zoom={13} style={{ height: "100vh", width: "100%" }}>
-            <TileLayer
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            />
-            <Polyline positions={coordinates} color="blue" />
-        </MapContainer>
+        <div className="altitude-container">
+            <svg width={width} height={height} style={{ border: '1px solid #ccc', background: '#fafafa' }}>
+                {/* Graph path */}
+                <path d={pathData} fill="none" stroke="#0074d9" strokeWidth="2" />
+                {/* X-axis label */}
+                <text
+                    x={width / 2}
+                    y={height - 5}
+                    textAnchor="middle"
+                    fontSize="16"
+                    fill="#333"
+                >
+                </text>
+                {/* Y-axis label (rotated) */}
+                <text
+                    x={15}
+                    y={height / 2}
+                    textAnchor="middle"
+                    fontSize="16"
+                    fill="#333"
+                    transform={`rotate(-90 15,${height / 2})`}
+                >
+                </text>
+            </svg>
+        </div>
     );
-    
-    return (
-        <>
-
-        </>
-    )
 }
