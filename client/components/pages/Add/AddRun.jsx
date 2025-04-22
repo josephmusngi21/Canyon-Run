@@ -1,18 +1,17 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, Button, StyleSheet } from "react-native";
 
-export default function AddRun({ addRun = () => {} }) {
-    // addRun = {meters: 0, latitude: 32.3269, longitude: -110.7084, altitude: 2500}
+export default function AddRun({ listOfRuns, setListOfRuns }) {
     const [step, setStep] = useState(0);
     const [start, setStart] = useState({ lat: "", lng: "", alt: "" });
     const [end, setEnd] = useState({ lat: "", lng: "", alt: "" });
+    const [added, setAdded] = useState(false);
 
     function handleChange(setter, field, value) {
         setter(prev => ({ ...prev, [field]: value }));
     }
 
     function handleSave() {
-        // Convert string inputs to numbers and validate
         const parsedStart = {
             lat: parseFloat(start.lat),
             lng: parseFloat(start.lng),
@@ -23,8 +22,7 @@ export default function AddRun({ addRun = () => {} }) {
             lng: parseFloat(end.lng),
             alt: parseFloat(end.alt)
         };
-    
-        // Basic validation to ensure lat/lng are numbers
+
         if (
             isNaN(parsedStart.lat) || isNaN(parsedStart.lng) ||
             isNaN(parsedEnd.lat) || isNaN(parsedEnd.lng)
@@ -32,13 +30,14 @@ export default function AddRun({ addRun = () => {} }) {
             alert("Please enter valid numbers for latitude and longitude.");
             return;
         }
-    
-        addRun({ start: parsedStart, end: parsedEnd });
+
+        // Add the new run to the list
+        setListOfRuns([...listOfRuns, { start: parsedStart, end: parsedEnd }]);
+
         setStep(0);
         setStart({ lat: "", lng: "", alt: "" });
         setEnd({ lat: "", lng: "", alt: "" });
-
-        console.log('updated addrun' , addRun)
+        setAdded(true); // Set added to true
     }
 
     function renderCoords(label, coords, setCoords) {
@@ -52,7 +51,6 @@ export default function AddRun({ addRun = () => {} }) {
                     placeholder="Enter Latitude"
                     value={coords.lat}
                     onChangeText={v => {
-                        // Allow only numbers, optional minus, and one decimal point
                         const filtered = v.replace(/[^0-9.\-]/g, '').replace(/(\..*)\./g, '$1').replace(/(?!^)-/g, '');
                         handleChange(setCoords, "lat", filtered);
                     }}
@@ -86,12 +84,18 @@ export default function AddRun({ addRun = () => {} }) {
     return (
         <View style={styles.container}>
             <Text style={styles.title}>Add Run</Text>
+            {added && (
+                <Text style={styles.successMsg}>Run added successfully!</Text>
+            )}
             {step === 0 && renderCoords("Start", start, setStart)}
             {step === 1 && renderCoords("End", end, setEnd)}
             {step === 0 && (
                 <Button
                     title="Next"
-                    onPress={() => setStep(1)}
+                    onPress={() => {
+                        setStep(1);
+                        setAdded(false); // Reset added on navigation
+                    }}
                     color="#007BFF"
                 />
             )}
@@ -139,5 +143,11 @@ const styles = StyleSheet.create({
         padding: 8,
         marginBottom: 10,
         width: "100%",
+    },
+    successMsg: {
+        color: "green",
+        textAlign: "center",
+        marginBottom: 10,
+        fontWeight: "bold",
     },
 });
