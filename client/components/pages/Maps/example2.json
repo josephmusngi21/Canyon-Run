@@ -1,0 +1,41 @@
+{
+    "location": "Mt Lemmon",
+    "distance_miles": null,
+    "start": {
+        "latitude": 32.3402651,
+        "longitude": -110.71669309,
+        "altitude": 1485.0
+    },
+    "end": {
+        "latitude": 32.36761981,
+        "longitude": -110.71499557,
+        "altitude": 1991.0
+    },
+    "coordinates": [
+        {
+            "meters": 10.0,
+            "latitude": 32.3402651,
+            "longitude": -110.71669309,
+            "altitude": 1485.0
+        },
+        {
+            "meters": 20.0,
+            "latitude": 32.3403234,
+            "longitude": -110.71677412,
+            "altitude": 1482.0
+        },
+        {
+            "meters": 30.0,
+            "latitude": 32.3403817,
+            "longitude": -110.71685515,
+            "altitude": 1482.0
+        },
+        // ... (all other points in the same format)
+        {
+            "meters": 21620.0,
+            "latitude": 32.36761981,
+            "longitude": -110.71499557,
+            "altitude": 1991.0
+        }
+    ]
+}
