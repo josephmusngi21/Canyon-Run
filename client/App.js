@@ -10,27 +10,12 @@ import Altitude from './components/pages/Maps/Altitude';
 import exampleData from './components/pages/Maps/canyon.json'; // Example JSON data file
 
 export default function App() {
-  const [listOfRuns, setListOfRuns] = useState(exampleData.coordinates[0]);
-  // const [isAuthenticated, setIsAuthenticated] = useState(true);
-
-  // const handleLogin = () => {
-  //   setIsAuthenticated(true);
-  // };
+  const [listOfRuns, setListOfRuns] = useState(exampleData.coordinates);
 
   return (
     <View style={styles.container}>
       <Track />
-      <AddRun listOfRuns={listOfRuns} />
-      {/* {(() => {
-        try {
-          return <Maps />;
-        } catch (error) {
-          console.error('Error rendering Maps:', error);
-          return null;
-        }
-      })()} */}
-      {/* <Altitude />
-      <Maps /> */}
+      <AddRun listOfRuns={listOfRuns} setListOfRuns={setListOfRuns} />
     </View>
   );
 }
