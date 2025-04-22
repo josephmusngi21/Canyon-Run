@@ -47,24 +47,37 @@ export default function AddRun({ addRun = () => {} }) {
                 <Text style={styles.label}>{label} Coordinates</Text>
                 <Text style={styles.label}>Latitude:</Text>
                 <TextInput
+                    keyboardType="numeric"
                     style={styles.input}
                     placeholder="Enter Latitude"
                     value={coords.lat}
-                    onChangeText={v => handleChange(setCoords, "lat", v)}
+                    onChangeText={v => {
+                        // Allow only numbers, optional minus, and one decimal point
+                        const filtered = v.replace(/[^0-9.\-]/g, '').replace(/(\..*)\./g, '$1').replace(/(?!^)-/g, '');
+                        handleChange(setCoords, "lat", filtered);
+                    }}
                 />
                 <Text style={styles.label}>Longitude:</Text>
                 <TextInput
+                    keyboardType="numeric"
                     style={styles.input}
                     placeholder="Enter Longitude"
                     value={coords.lng}
-                    onChangeText={v => handleChange(setCoords, "lng", v)}
+                    onChangeText={v => {
+                        const filtered = v.replace(/[^0-9.\-]/g, '').replace(/(\..*)\./g, '$1').replace(/(?!^)-/g, '');
+                        handleChange(setCoords, "lng", filtered);
+                    }}
                 />
                 <Text style={styles.label}>Altitude:</Text>
                 <TextInput
+                    keyboardType="numeric"
                     style={styles.input}
                     placeholder="Enter Altitude"
                     value={coords.alt}
-                    onChangeText={v => handleChange(setCoords, "alt", v)}
+                    onChangeText={v => {
+                        const filtered = v.replace(/[^0-9.\-]/g, '').replace(/(\..*)\./g, '$1').replace(/(?!^)-/g, '');
+                        handleChange(setCoords, "alt", filtered);
+                    }}
                 />
             </View>
         );
