@@ -1,15 +1,16 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View } from 'react-native';
-// import Geolocation from './components/Geolocation';
-// import Register from './components/Register/Register';
-// import Login from './components/Login/Login';
 import { useState } from 'react';
 
 import AddRun from './components/pages/Add/AddRun';
+import Track from './components/pages/Tracker/Track';
 import Maps from './components/pages/Maps/Maps';
 import Altitude from './components/pages/Maps/Altitude';
 
+import exampleData from './components/pages/Maps/canyon.json'; // Example JSON data file
+
 export default function App() {
+  const [listOfRuns, setListOfRuns] = useState(exampleData.coordinates[0]);
   // const [isAuthenticated, setIsAuthenticated] = useState(true);
 
   // const handleLogin = () => {
@@ -18,8 +19,9 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      {/* <AddRun />
-      {(() => {
+      <Track />
+      <AddRun listOfRuns={listOfRuns} />
+      {/* {(() => {
         try {
           return <Maps />;
         } catch (error) {
@@ -27,8 +29,8 @@ export default function App() {
           return null;
         }
       })()} */}
-      <Altitude />
-      <Maps />
+      {/* <Altitude />
+      <Maps /> */}
     </View>
   );
 }
