@@ -13,37 +13,56 @@ export default function AddRun({ listOfRuns, setListOfRuns }) {
 
     function handleSave() {
         const parsedStart = {
-            lat: parseFloat(start.lat),
-            lng: parseFloat(start.lng),
-            alt: parseFloat(start.alt)
+            latitude: parseFloat(start.lat),
+            longitude: parseFloat(start.lng),
+            altitude: parseFloat(start.alt)
         };
         const parsedEnd = {
-            lat: parseFloat(end.lat),
-            lng: parseFloat(end.lng),
-            alt: parseFloat(end.alt)
+            latitude: parseFloat(end.lat),
+            longitude: parseFloat(end.lng),
+            altitude: parseFloat(end.alt)
         };
 
+        // Validate required fields
         if (
-            isNaN(parsedStart.lat) || isNaN(parsedStart.lng) ||
-            isNaN(parsedEnd.lat) || isNaN(parsedEnd.lng)
+            isNaN(parsedStart.latitude) || isNaN(parsedStart.longitude) ||
+            isNaN(parsedEnd.latitude) || isNaN(parsedEnd.longitude)
         ) {
             alert("Please enter valid numbers for latitude and longitude.");
             return;
         }
 
-        // Add the new run to the list
-        setListOfRuns([...listOfRuns, { start: parsedStart, end: parsedEnd }]);
+        // Use location from start (add location field to start state if needed)
+        const location = start.location || "";
+
+        const newRun = {
+            location,
+            distance_miles: null,
+            start: parsedStart,
+            end: parsedEnd,
+            coordinates: [null]
+        };
+
+        setListOfRuns([...listOfRuns, newRun]);
 
         setStep(0);
-        setStart({ lat: "", lng: "", alt: "" });
+        setStart({ lat: "", lng: "", alt: "", location: "" });
         setEnd({ lat: "", lng: "", alt: "" });
-        setAdded(true); // Set added to true
+        setAdded(true);
     }
 
     function renderCoords(label, coords, setCoords) {
         return (
             <View style={styles.section}>
                 <Text style={styles.label}>{label} Coordinates</Text>
+
+                <Text style={styles.label}>Location:</Text>
+                <TextInput
+                    style={styles.input}
+                    placeholder="Enter Location"
+                    value={coords.location}
+                />
+
                 <Text style={styles.label}>Latitude:</Text>
                 <TextInput
                     keyboardType="numeric"
