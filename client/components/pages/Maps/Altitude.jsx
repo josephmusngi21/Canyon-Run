@@ -1,59 +1,65 @@
 import React from 'react';
-import exampleData from './canyon.json';    // Example JSON data file
+import exampleData from '../../../assets/csv/jsonCanyon.json';
 
-export default function Altitude() {
+export default function Altitude({ maxWidth = 600, maxHeight = 300 }) {
+    const altitudeData = Array.isArray(exampleData?.coordinates)
+        ? exampleData.coordinates
+            .filter(point => point && point.meters != null && point.altitude != null)
+            .map(point => ({
+                meters: parseFloat(String(point.meters).replace(/\r/g, '').trim()),
+                altitude: parseFloat(String(point.altitude).replace(/\r/g, '').trim())
+            }))
+        : [];
 
-    // Extract altitude and meters for graphing
-    const altitudeData = exampleData.coordinates.map(point => ({
-        meters: point.meters,
-        altitude: point.altitude
-    }));
+    if (!altitudeData.length) return <div>No data</div>;
 
-    const width = 600;
-    const height = 300;
-    const padding = 40;
-
-    // Find min/max for scaling
     const minMeters = Math.min(...altitudeData.map(d => d.meters));
     const maxMeters = Math.max(...altitudeData.map(d => d.meters));
     const minAltitude = Math.min(...altitudeData.map(d => d.altitude));
     const maxAltitude = Math.max(...altitudeData.map(d => d.altitude));
 
-    // Scale functions
-    const x = meters => padding + ((meters - minMeters) / (maxMeters - minMeters)) * (width - 2 * padding);
-    const y = altitude => height - padding - ((altitude - minAltitude) / (maxAltitude - minAltitude)) * (height - 2 * padding);
+    const dataWidth = maxMeters - minMeters;
+    const dataHeight = maxAltitude - minAltitude;
+    const dataAspect = dataWidth / dataHeight;
 
-    // Create SVG path
+    const boxAspect = maxWidth / maxHeight;
+
+    let plotWidth, plotHeight, offsetX, offsetY;
+    const padding = 40;
+
+    if (dataAspect > boxAspect) {
+        plotWidth = maxWidth - 2 * padding;
+        plotHeight = plotWidth / dataAspect;
+        offsetX = padding;
+        offsetY = (maxHeight - plotHeight) / 2;
+    } else {
+        plotHeight = maxHeight - 2 * padding;
+        plotWidth = plotHeight * dataAspect;
+        offsetY = padding;
+        offsetX = (maxWidth - plotWidth) / 2;
+    }
+
+    const x = meters => offsetX + ((meters - minMeters) / dataWidth) * plotWidth;
+    const y = altitude => offsetY + plotHeight - ((altitude - minAltitude) / dataHeight) * plotHeight;
+
     const pathData = altitudeData.map((d, i) =>
         `${i === 0 ? 'M' : 'L'}${x(d.meters)},${y(d.altitude)}`
     ).join(' ');
 
+    const xTicks = 10;
+    const yTicks = 6;
+    const xTickValues = Array.from({ length: xTicks }, (_, i) =>
+        minMeters + (i * (dataWidth) / (xTicks - 1))
+    );
+    const yTickValues = Array.from({ length: yTicks }, (_, i) =>
+        minAltitude + (i * (dataHeight) / (yTicks - 1))
+    );
+
     return (
-        <div className="altitude-container">
-            <svg width={width} height={height} style={{ border: '1px solid #ccc', background: '#fafafa' }}>
+        <div className="altitude-container" style={{ maxWidth, maxHeight }}>
+            <svg width={maxWidth} height={maxHeight} style={{ border: '1px solid #ccc', background: '#fafafa' }}>
                 {/* Graph path */}
                 <path d={pathData} fill="none" stroke="#0074d9" strokeWidth="2" />
-                {/* X-axis label */}
-                <text
-                    x={width / 2}
-                    y={height - 5}
-                    textAnchor="middle"
-                    fontSize="16"
-                    fill="#333"
-                >
-                    Meters
-                </text>
-                {/* Y-axis label (rotated) */}
-                <text
-                    x={15}
-                    y={height / 2}
-                    textAnchor="middle"
-                    fontSize="16"
-                    fill="#333"
-                    transform={`rotate(-90 15,${height / 2})`}
-                >
-                    Elevation
-                </text>
             </svg>
         </div>
     );
