@@ -14,8 +14,13 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      <Track />
-      <AddRun listOfRuns={listOfRuns} setListOfRuns={setListOfRuns} />
+      {/* <Track />
+      <AddRun listOfRuns={listOfRuns} setListOfRuns={setListOfRuns} /> */}
+        <h1> Map</h1>
+      <Maps listOfRuns={listOfRuns} setListOfRuns={setListOfRuns} />
+
+      <h1> Altitude</h1>
+      <Altitude />
     </View>
   );
 }
