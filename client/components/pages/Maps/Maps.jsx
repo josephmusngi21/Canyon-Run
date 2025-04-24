@@ -45,8 +45,6 @@ export default function Maps() {
     const x = lon => offsetX + (lon - minLon) * scale;
     const y = lat => height - (offsetY + (lat - minLat) * scale);
 
-    // Always use the full coordinates array to ensure first and last points are mapped
-    // Use coordinates array for path, but get start/end from json "start"/"end" fields if present
     const filteredCoordinates = coordinates;
 
     // Prefer start/end from JSON fields if available, else fallback to coordinates array
@@ -82,17 +80,6 @@ export default function Maps() {
         currentSegment.push(point);
     }
     if (currentSegment.length > 1) segments.push(currentSegment);
-
-    // Get start and end from coordinates array to ensure consistency
-
-    // Axis ticks and labels (not needed anymore)
-    // const numTicks = 5;
-    // const lonTicks = Array.from({ length: numTicks }, (_, i) =>
-    //     minLon + (i * (maxLon - minLon)) / (numTicks - 1)
-    // );
-    // const latTicks = Array.from({ length: numTicks }, (_, i) =>
-    //     minLat + (i * (maxLat - minLat)) / (numTicks - 1)
-    // );
 
     console.log("Start Coordinate:", startCoord);
     console.log("End Coordinate:", endCoord);
