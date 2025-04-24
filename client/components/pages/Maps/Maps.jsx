@@ -45,12 +45,24 @@ export default function Maps() {
     const x = lon => offsetX + (lon - minLon) * scale;
     const y = lat => height - (offsetY + (lat - minLat) * scale);
 
-    // Remove duplicate start/end point
-    const filteredCoordinates = coordinates.length > 1 &&
-        coordinates[0].latitude === coordinates[coordinates.length - 1].latitude &&
-        coordinates[0].longitude === coordinates[coordinates.length - 1].longitude
-        ? coordinates.slice(0, -1)
-        : coordinates;
+    // Always use the full coordinates array to ensure first and last points are mapped
+    // Use coordinates array for path, but get start/end from json "start"/"end" fields if present
+    const filteredCoordinates = coordinates;
+
+    // Prefer start/end from JSON fields if available, else fallback to coordinates array
+    let startCoord = exampleData.start
+        ? {
+            latitude: parseFloat(exampleData.start.latitude),
+            longitude: parseFloat(exampleData.start.longitude)
+        }
+        : coordinates[0];
+
+    let endCoord = exampleData.end
+        ? {
+            latitude: parseFloat(exampleData.end.latitude),
+            longitude: parseFloat(exampleData.end.longitude)
+        }
+        : coordinates[coordinates.length - 1];
 
     // Split into segments if distance > threshold (e.g., 100 meters)
     const threshold = 100; // meters
@@ -71,9 +83,24 @@ export default function Maps() {
     }
     if (currentSegment.length > 1) segments.push(currentSegment);
 
+    // Get start and end from coordinates array to ensure consistency
+
+    // Axis ticks and labels (not needed anymore)
+    // const numTicks = 5;
+    // const lonTicks = Array.from({ length: numTicks }, (_, i) =>
+    //     minLon + (i * (maxLon - minLon)) / (numTicks - 1)
+    // );
+    // const latTicks = Array.from({ length: numTicks }, (_, i) =>
+    //     minLat + (i * (maxLat - minLat)) / (numTicks - 1)
+    // );
+
+    console.log("Start Coordinate:", startCoord);
+    console.log("End Coordinate:", endCoord);
+
     return (
         <div className="altitude-container">
             <svg width={width} height={height} style={{ border: '1px solid #ccc', background: '#fafafa' }}>
+                {/* Path segments */}
                 {segments.map((segment, idx) => {
                     const pathData = segment
                         .map((point, i) => {
@@ -92,6 +119,42 @@ export default function Maps() {
                         />
                     );
                 })}
+                {/* Start marker and label */}
+                <circle
+                    cx={x(startCoord.longitude)}
+                    cy={y(startCoord.latitude)}
+                    r={6}
+                    fill="#2ecc40"
+                    stroke="#222"
+                    strokeWidth="2"
+                />
+                <text
+                    x={x(startCoord.longitude) + 10}
+                    y={y(startCoord.latitude) - 10}
+                    fontSize="14"
+                    fill="#2ecc40"
+                    fontWeight="bold"
+                >
+                    Start
+                </text>
+                {/* End marker and label */}
+                <circle
+                    cx={x(endCoord.longitude)}
+                    cy={y(endCoord.latitude)}
+                    r={6}
+                    fill="#ff4136"
+                    stroke="#222"
+                    strokeWidth="2"
+                />
+                <text
+                    x={x(endCoord.longitude) + 10}
+                    y={y(endCoord.latitude) - 10}
+                    fontSize="14"
+                    fill="#ff4136"
+                    fontWeight="bold"
+                >
+                    End
+                </text>
             </svg>
         </div>
     );
