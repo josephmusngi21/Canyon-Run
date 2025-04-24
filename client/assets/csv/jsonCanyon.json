@@ -2,10 +2,10 @@
   "location": "Mt Lemmon",
   "distance_miles": null,
   "start": {
-    "meters": "10.0000000",
-    "latitude": "32.340265100000003",
-    "longitude": "-110.716693090000007",
-    "altitude": "1485.000000000000000\r",
+    "meters": "10170.0000000",
+    "latitude": "32.310587640000001",
+    "longitude": "-110.742848559999999",
+    "altitude": "917.000000000000000\r",
     "time": null
   },
   "end": {
