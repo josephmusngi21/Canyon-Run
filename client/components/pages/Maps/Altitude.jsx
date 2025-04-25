@@ -1,5 +1,5 @@
 import React from 'react';
-import exampleData from '../../../assets/csv/jsonCanyon.json';
+import exampleData from '../../../assets/runJson/jsonCanyon.json';
 
 export default function Altitude({ maxWidth = 600, maxHeight = 300 }) {
     const altitudeData = Array.isArray(exampleData?.coordinates)

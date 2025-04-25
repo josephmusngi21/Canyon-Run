@@ -1,5 +1,5 @@
 import React from "react";
-import exampleData from '../../../assets/csv/jsonCanyon.json';
+import exampleData from '../../../assets/runJson/jsonCanyon.json';
 
 // Helper to calculate distance between two lat/lon points (approximate, in meters)
 function haversine(lat1, lon1, lat2, lon2) {
