@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
 
-const csvPath = path.join(__dirname, 'csv', '10_MetersCSV.csv');
+const csvPath = path.join(__dirname, 'runJson', '10_MetersCSV.csv');
 const outputFileName = 'jsonCanyon.json';
 
 function main() {
@@ -33,31 +33,34 @@ function main() {
             const lastData = lines[lines.length - 1].split(',');
 
             // Build JSON structure
+            const uniqueId = Date.now().toString();
+
             const jsonOutput = {
-                location: locationUser,
-                distance_miles: null,
-                start: {
-                    meters: firstData[2] || null,
-                    latitude: firstData[0] || null,
-                    longitude: firstData[1] || null,
-                    altitude: firstData[4] || null,
-                    time: null
-                },
-                end: {
-                    meters: lastData[2] || null,
-                    latitude: lastData[0] || null,
-                    longitude: lastData[1] || null,
-                    altitude: lastData[4] || null,
-                    time: null
-                },
-                coordinates: []
+                [uniqueId]: {
+                    location: locationUser,
+                    distance_miles: null,
+                    start: {
+                        meters: firstData[2] || null,
+                        latitude: firstData[0] || null,
+                        longitude: firstData[1] || null,
+                        altitude: firstData[4] || null,
+                        time: null
+                    },
+                    end: {
+                        meters: lastData[2] || null,
+                        latitude: lastData[0] || null,
+                        longitude: lastData[1] || null,
+                        altitude: lastData[4] || null,
+                        time: null
+                    },
+                    coordinates: []
+                }
             };
 
-            // Loop through each data line (skip header)
             for (let i = 1; i < lines.length; i++) {
                 const parts = lines[i].split(',');
                 if (parts.length < 3) continue;
-                jsonOutput.coordinates.push({
+                jsonOutput[uniqueId].coordinates.push({
                     meters: parts[2] || null,
                     latitude: parts[0] || null,
                     longitude: parts[1] || null,
@@ -67,7 +70,7 @@ function main() {
             }
 
             // Write to new JSON file
-            const outputPath = path.join(__dirname, 'csv', outputFileName);
+            const outputPath = path.join(__dirname, 'runJson', outputFileName);
             fs.writeFileSync(outputPath, JSON.stringify(jsonOutput, null, 2));
             console.log('JSON file created at:', outputPath);
 
