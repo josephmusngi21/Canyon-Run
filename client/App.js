@@ -1,26 +1,18 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, View } from 'react-native';
-import { useState } from 'react';
+import { StyleSheet, View, Text } from 'react-native';
 
-import AddRun from './components/pages/Add/AddRun';
-import Track from './components/pages/Tracker/Track';
+//Maps
 import Maps from './components/pages/Maps/Maps';
+// //Altitude
 import Altitude from './components/pages/Maps/Altitude';
-
-import exampleData from './components/pages/Maps/canyon.json'; // Example JSON data file
+// //AddRun
+import AddRun from './components/pages/Add/AddRun';
 
 export default function App() {
-  const [listOfRuns, setListOfRuns] = useState(exampleData.coordinates);
-
   return (
     <View style={styles.container}>
-      {/* <Track />
-      <AddRun listOfRuns={listOfRuns} setListOfRuns={setListOfRuns} /> */}
-        <h1> Map</h1>
-      <Maps listOfRuns={listOfRuns} setListOfRuns={setListOfRuns} />
-
-      <h1> Altitude</h1>
+      <Maps />
       <Altitude />
+      <AddRun />
     </View>
   );
 }
