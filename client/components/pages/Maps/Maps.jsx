@@ -18,8 +18,12 @@ export default function Maps() {
     const height = 300;
     const padding = 40;
 
+    // Get the first key and its data
+    const runId = Object.keys(exampleData)[0];
+    const runData = exampleData[runId];
+
     // Parse coordinates as numbers
-    const coordinates = exampleData.coordinates.map(p => ({
+    const coordinates = runData.coordinates.map(p => ({
         latitude: parseFloat(p.latitude),
         longitude: parseFloat(p.longitude)
     }));
@@ -48,17 +52,17 @@ export default function Maps() {
     const filteredCoordinates = coordinates;
 
     // Prefer start/end from JSON fields if available, else fallback to coordinates array
-    let startCoord = exampleData.start
+    let startCoord = runData.start
         ? {
-            latitude: parseFloat(exampleData.start.latitude),
-            longitude: parseFloat(exampleData.start.longitude)
+            latitude: parseFloat(runData.start.latitude),
+            longitude: parseFloat(runData.start.longitude)
         }
         : coordinates[0];
 
-    let endCoord = exampleData.end
+    let endCoord = runData.end
         ? {
-            latitude: parseFloat(exampleData.end.latitude),
-            longitude: parseFloat(exampleData.end.longitude)
+            latitude: parseFloat(runData.end.latitude),
+            longitude: parseFloat(runData.end.longitude)
         }
         : coordinates[coordinates.length - 1];
 
@@ -80,9 +84,6 @@ export default function Maps() {
         currentSegment.push(point);
     }
     if (currentSegment.length > 1) segments.push(currentSegment);
-
-    console.log("Start Coordinate:", startCoord);
-    console.log("End Coordinate:", endCoord);
 
     return (
         <div className="altitude-container">

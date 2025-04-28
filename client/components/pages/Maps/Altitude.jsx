@@ -2,8 +2,12 @@ import React from 'react';
 import exampleData from '../../../assets/runJson/jsonCanyon.json';
 
 export default function Altitude({ maxWidth = 600, maxHeight = 300 }) {
-    const altitudeData = Array.isArray(exampleData?.coordinates)
-        ? exampleData.coordinates
+    // Get the first object value from the random-keyed root object
+    const firstKey = Object.keys(exampleData)[0];
+    const coordinates = exampleData[firstKey]?.coordinates;
+
+    const altitudeData = Array.isArray(coordinates)
+        ? coordinates
             .filter(point => point && point.meters != null && point.altitude != null)
             .map(point => ({
                 meters: parseFloat(String(point.meters).replace(/\r/g, '').trim()),
@@ -46,14 +50,7 @@ export default function Altitude({ maxWidth = 600, maxHeight = 300 }) {
         `${i === 0 ? 'M' : 'L'}${x(d.meters)},${y(d.altitude)}`
     ).join(' ');
 
-    const xTicks = 10;
-    const yTicks = 6;
-    const xTickValues = Array.from({ length: xTicks }, (_, i) =>
-        minMeters + (i * (dataWidth) / (xTicks - 1))
-    );
-    const yTickValues = Array.from({ length: yTicks }, (_, i) =>
-        minAltitude + (i * (dataHeight) / (yTicks - 1))
-    );
+    // Removed unused xTickValues and yTickValues
 
     return (
         <div className="altitude-container" style={{ maxWidth, maxHeight }}>
