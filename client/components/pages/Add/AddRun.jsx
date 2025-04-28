@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, Button, StyleSheet } from "react-native";
 
-export default function AddRun({ listOfRuns, setListOfRuns }) {
+const listOfRuns = require("../../../assets/runJson/jsonCanyon.json");
+
+export default function AddRun() {
     const [step, setStep] = useState(0);
-    const [start, setStart] = useState({ lat: "", lng: "", alt: "" });
-    const [end, setEnd] = useState({ lat: "", lng: "", alt: "" });
+    const [start, setStart] = useState({ lat: "", lng: "", alt: "", location: "" });
+    const [end, setEnd] = useState({ lat: "", lng: "", alt: "", location: "" });
     const [added, setAdded] = useState(false);
 
     function handleChange(setter, field, value) {
@@ -12,6 +14,8 @@ export default function AddRun({ listOfRuns, setListOfRuns }) {
     }
 
     function handleSave() {
+        const uniqueId = Math.random().toString(16).slice(2);
+
         const parsedStart = {
             latitude: parseFloat(start.lat),
             longitude: parseFloat(start.lng),
@@ -22,8 +26,12 @@ export default function AddRun({ listOfRuns, setListOfRuns }) {
             longitude: parseFloat(end.lng),
             altitude: parseFloat(end.alt)
         };
+        const location = start.location || "";
+        if (Object.values(listOfRuns).some(run => run.location === location)) {
+            alert("This location name already exists in the list of runs.");
+            return;
+        }
 
-        // Validate required fields
         if (
             isNaN(parsedStart.latitude) || isNaN(parsedStart.longitude) ||
             isNaN(parsedEnd.latitude) || isNaN(parsedEnd.longitude)
@@ -32,18 +40,37 @@ export default function AddRun({ listOfRuns, setListOfRuns }) {
             return;
         }
 
-        // Use location from start (add location field to start state if needed)
-        const location = start.location || "";
-
         const newRun = {
-            location,
-            distance_miles: null,
-            start: parsedStart,
-            end: parsedEnd,
-            coordinates: [null]
+            [uniqueId]: {
+                "location": location,
+                "distance_miles": null,
+                "start": {
+                    meters: 0,
+                    latitude: parsedStart.latitude,
+                    longitude: parsedStart.longitude,
+                    altitude: parsedStart.altitude,
+                    time: null
+                },
+                "end": {
+                    meters: null,
+                    latitude: parsedEnd.latitude,
+                    longitude: parsedEnd.longitude,
+                    altitude: parsedEnd.altitude,
+                    time: null
+                },
+                "coordinates": []
+            }
         };
 
-        setListOfRuns([...listOfRuns, newRun]);
+        // Directly push to the imported listOfRuns array
+        try {
+            // Wont work in react native during runtime, will need database or backend to work with async storage
+            Object.assign(listOfRuns, newRun);
+
+            console.log("New run added successfully:", newRun);
+        } catch (error) {
+            console.error("Error adding new run:", error);
+        }
 
         setStep(0);
         setStart({ lat: "", lng: "", alt: "", location: "" });
@@ -55,13 +82,6 @@ export default function AddRun({ listOfRuns, setListOfRuns }) {
         return (
             <View style={styles.section}>
                 <Text style={styles.label}>{label} Coordinates</Text>
-
-                <Text style={styles.label}>Location:</Text>
-                <TextInput
-                    style={styles.input}
-                    placeholder="Enter Location"
-                    value={coords.location}
-                />
 
                 <Text style={styles.label}>Latitude:</Text>
                 <TextInput
@@ -106,6 +126,13 @@ export default function AddRun({ listOfRuns, setListOfRuns }) {
             {added && (
                 <Text style={styles.successMsg}>Run added successfully!</Text>
             )}
+            <Text style={styles.label}>Location:</Text>
+            <TextInput
+                style={styles.input}
+                placeholder="Enter Location"
+                value={start.location}
+                onChangeText={v => handleChange(setStart, "location", v)}
+            />
             {step === 0 && renderCoords("Start", start, setStart)}
             {step === 1 && renderCoords("End", end, setEnd)}
             {step === 0 && (
@@ -113,7 +140,7 @@ export default function AddRun({ listOfRuns, setListOfRuns }) {
                     title="Next"
                     onPress={() => {
                         setStep(1);
-                        setAdded(false); // Reset added on navigation
+                        setAdded(false);
                     }}
                     color="#007BFF"
                 />
