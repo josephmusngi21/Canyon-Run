@@ -33,7 +33,42 @@ function main() {
             const lastData = lines[lines.length - 1].split(',');
 
             // Build JSON structure
-            const uniqueId = Date.now().toString();
+
+            // New JSON structure
+
+            // {
+            //     id: {
+            //         location: locationUser,
+            //         distance_miles: null,
+            //         start: {
+            //             meters: firstData[2] || null,
+            //             latitude: firstData[0] || null,
+            //             longitude: firstData[1] || null,
+            //             altitude: firstData[4] || null,
+            //             time: null
+            //         },
+            //         end: {
+            //             meters: lastData[2] || null,
+            //             latitude: lastData[0] || null,
+            //             longitude: lastData[1] || null,
+            //             altitude: lastData[4] || null,
+            //             time: null
+            //         },
+            //         coordinates: [
+            //             {
+            //                 meters: int,
+            //                 latitude: float,
+            //                 longitude: float,
+            //                 altitude: float,
+            //                 time: null
+            //             },
+            //         ]
+            //     }
+            // }
+            
+        
+            // Generate a unique id (e.g., timestamp-based)
+            const uniqueId = Math.random().toString(16).slice(2)
 
             const jsonOutput = {
                 [uniqueId]: {
