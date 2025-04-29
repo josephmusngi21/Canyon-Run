@@ -2,12 +2,18 @@ import React, { useState, useEffect } from "react";
 import { StyleSheet, Text, View, Alert, Button } from "react-native";
 import * as Location from "expo-location";
 
+// Track component receives startCoord and endCoord as props
 export default function Track(startCoord, endCoord) {
+    // State to track if location permission is granted
     const [locationGranted, setLocationGranted] = useState(false);
+    // State to store user's current location
     const [userLocation, setUserLocation] = useState(null);
-    const [routeJson, setRouteJson] = useState([]); // Initialize as array
+    // State to track if tracking is active
     const [tracking, setTracking] = useState(false);
+    // Json of coordinates
+    const [coordinatesJson, setCoordinatesJson] = useState({});
 
+    // Request location permission on component mount
     useEffect(() => {
         const requestLocationPermission = async () => {
             let { status } = await Location.requestForegroundPermissionsAsync();
@@ -25,6 +31,7 @@ export default function Track(startCoord, endCoord) {
         requestLocationPermission();
     }, []);
 
+    // Function to get the user's current location
     const getCurrentLocation = async () => {
         try {
             const location = await Location.getCurrentPositionAsync({});
@@ -34,34 +41,14 @@ export default function Track(startCoord, endCoord) {
         }
     };
 
-        // Tracking should start with false
-    while (tracking) {
-        if ([userLocation.coords.longitude, userLocation.coords.latitude].includes(null)) {
-            Alert.alert("Error: Coordinates are null.");
-            return;
-        }
-        const newRoute = {
-            longitude: userLocation.coords.longitude,
-            latitude: userLocation.coords.latitude,
-            altitude: userLocation.coords.altitude,
-        };
-        setRouteJson((prevRoute) => [...prevRoute, newRoute]);
-
-    }
-
-
-    useEffect(() => {
-        if (locationGranted) {
-            getCurrentLocation();
-        }
-    }, [locationGranted]);
-
+    // Log user location if available
     if (userLocation) {
         const { longitude, latitude, altitude } = userLocation;
         console.log('Coords:', { longitude, latitude, altitude });
     }
 
-    console.log('Route JSON:', routeJson); // Log the routeJson
+    // Log the routeJson state
+    console.log('Route JSON:', routeJson);
 
     return (
         <div className="track-container">
