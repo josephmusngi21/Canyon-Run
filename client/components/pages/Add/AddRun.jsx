@@ -4,6 +4,15 @@ import React, { useState } from "react";
 import { View, Text, TextInput, Button, StyleSheet } from "react-native";
 
 const listOfRuns = require("../../../assets/runJson/jsonCanyon.json");
+const { getRunCollection, insertRun } = require('./components/api/db'); 
+
+// To add to database
+// const { getRunCollection } = require('./components/api/db');
+
+//
+// // Example usage:
+// insertRun({ name: 'Test Run', distance: 5.2, date: new Date() });
+
 
 export default function AddRun() {
     const [step, setStep] = useState(0);
@@ -67,7 +76,7 @@ export default function AddRun() {
         // Directly push to the imported listOfRuns array
         try {
             // Wont work in react native during runtime, will need database or backend to work with async storage
-            Object.assign(listOfRuns, newRun);
+            insertRun(newRun);
 
             console.log("New run added successfully:", newRun);
         } catch (error) {
