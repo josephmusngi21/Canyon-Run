@@ -1,30 +1,24 @@
-const { MongoClient } = require('mongodb');
+const dotenv = require('dotenv');
+const { MongoClient } = require("mongodb");
 
-async function main() {
-    const uri = process.env.MONGODB_URI;
-    const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+dotenv.config();
 
-    await client.connect();
-    console.log('Connected to MongoDB');
+const uri = process.env.MONGODB_URI;
 
-    await listDatabases(client);
-
-    try {
-        await client.connect();
-        await listDatabases(client);
-    } catch (e) {
-        console.error(e);
-    }   finally {
-        await client.close();
-    }
+if (!uri) {
+    console.error("Error: MONGODB_URI environment variable is not set.");
+    process.exit(1);
 }
 
-async function listDatabases(client) {
-    databasesList = await client.db().admin().listDatabases();
-    console.log('Databases:')
-    databasesList.databases.forEach(db => {
-        console.log(` - ${db.name}`);
-    });
-};
+let client;
 
-main().catch(console.error);
+async function getRunCollection() {
+    if (!client) {
+        client = new MongoClient(uri);
+        await client.connect();
+    }
+    const db = client.db('canyon_run');
+    return db.collection('run');
+}
+
+module.exports = { getRunCollection };
