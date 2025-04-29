@@ -21,4 +21,11 @@ async function getRunCollection() {
     return db.collection('run');
 }
 
-module.exports = { getRunCollection };
+async function insertRun(runData) {
+        const runCollection = await getRunCollection();
+        const result = await runCollection.insertOne(runData);
+        console.log('Inserted document ID:', result.insertedId);
+    }
+    
+
+module.exports = { getRunCollection, insertRun };
