@@ -1,5 +1,5 @@
-import { StyleSheet, View, Text } from 'react-native';
 import React from 'react';
+import { StyleSheet, View, Text } from 'react-native';
 // //Maps
 // import Maps from './components/pages/Maps/Maps';
 // //Altitude
@@ -8,15 +8,10 @@ import React from 'react';
 // import AddRun from './components/pages/Add/AddRun';
 // import { Button } from 'react-native-web';
 
-
-
 export default function App() {
-
   return (
     <View style={styles.container}>
-      {/* {/* <Maps /> */}
-      {/* <Altitude /> */}
-      {/* <AddRun /> */}
+      {/* <Text>Hello World</Text> */}
       <Text>Hello World</Text>
     </View>
   );
