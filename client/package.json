@@ -11,5 +11,8 @@
   "description": "",
   "dependencies": {
     "@expo/metro-runtime": "~4.0.1"
+  },
+  "devDependencies": {
+    "@react-native-community/cli": "^18.0.0"
   }
 }

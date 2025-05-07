@@ -9,9 +9,10 @@ import { StyleSheet, View, Text } from 'react-native';
 // import { Button } from 'react-native-web';
 
 export default function App() {
+  console.log('Made it to App.js');
   return (
     <View style={styles.container}>
-      {/* <Text>Hello World</Text> */}
+      <Text>Hello World</Text> 
       <Text>Hello World</Text>
     </View>
   );
