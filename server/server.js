@@ -6,7 +6,7 @@ const mongoose = require('mongoose');
 
 const app = express();
 const PORT = 3000;
-const uri = process.env.URI;
+const uri = process.env.MONGODB_URI;
 
 const databaseName = 'canyon_run';
 const collectionName = 'runs';
