@@ -1,19 +1,13 @@
-import React from 'react';
-import { StyleSheet, View, Text } from 'react-native';
-// //Maps
-// import Maps from './components/pages/Maps/Maps';
-// //Altitude
-// import Altitude from './components/pages/Maps/Altitude';
-// //AddRun
-// import AddRun from './components/pages/Add/AddRun';
-// import { Button } from 'react-native-web';
+import * as React from 'react';
+import { StyleSheet, View, Text, Button } from 'react-native';
 
 export default function App() {
   console.log('Made it to App.js');
+
   return (
     <View style={styles.container}>
-      <Text>Hello World</Text> 
       <Text>Hello World</Text>
+      <Button title="Press Me" onPress={() => console.log("Button Pressed")} />
     </View>
   );
 }
@@ -26,4 +20,3 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 });
-
