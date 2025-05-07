@@ -1,28 +1,25 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, View } from 'react-native';
-import Geolocation from './components/Geolocation';
-// import Register from './components/Register/Register';
-// import Login from './components/Login/Login';
-import { useState } from 'react';
+import { StyleSheet, View, Text } from 'react-native';
+import React, { useState } from 'react';
+//Maps
+import Maps from './components/pages/Maps/Maps';
+//Altitude
+import Altitude from './components/pages/Maps/Altitude';
+//AddRun
+import AddRun from './components/pages/Add/AddRun';
+import { Button } from 'react-native-web';
 
 export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const [display, setDisplay] = useState(false);
 
-  const handleLogin = () => {
-    setIsAuthenticated(true);
-  };
   return (
     <View style={styles.container}>
-      {/* {!isAuthenticated ? (
-        <>
-          <Login onLogin={handleLogin} />
-          <Register />
-        </>
-      ) : (
-        <Geolocation />
-      )} */}
-      {/* <Geolocation /> */}
-      <StatusBar style="auto" />
+    {display ? <View><Maps/><Altitude/>
+    <Button title="Hide Maps" onPress={() => setDisplay(false)} />
+    </View> : 
+    <Button title="Show Maps" onPress={() => setDisplay(true)} />}
+      {/* <Maps />
+      <Altitude /> */}
+      <AddRun />
     </View>
   );
 }
@@ -33,5 +30,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'auto',
   },
 });
