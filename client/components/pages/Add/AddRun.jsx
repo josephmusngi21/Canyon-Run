@@ -2,8 +2,7 @@ import React, { useState } from "react";
 import { View, Text, TextInput, Button, StyleSheet } from "react-native";
 
 // const listOfRuns = require("../../../assets/runJson/jsonCanyon.json");
-import listOfRuns from './../../jsonCanyon.json'
-
+import listOfRuns from './../../jsonCanyon.json';
 
 export default function AddRun() {
     const [step, setStep] = useState(0);
