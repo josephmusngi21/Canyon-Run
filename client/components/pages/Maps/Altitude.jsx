@@ -1,10 +1,14 @@
-import React from 'react';
-// import exampleData from '../../../assets/runJson/jsonCanyon.json';
-import exampleData from './../../jsonCanyon.json'
-
+import React from "react";
+import { StyleSheet, View, Text } from "react-native";
+import Svg, { Path } from "react-native-svg";
+import exampleData from "./../../jsonCanyon.json";
 
 export default function Altitude({ maxWidth = 600, maxHeight = 300 }) {
-    // Get the first object value from the random-keyed root object
+    // Validate JSON structure
+    if (!exampleData || Object.keys(exampleData).length === 0) {
+        return <Text>Error: Invalid JSON structure</Text>;
+    }
+
     const firstKey = Object.keys(exampleData)[0];
     const coordinates = exampleData[firstKey]?.coordinates;
 
@@ -17,8 +21,9 @@ export default function Altitude({ maxWidth = 600, maxHeight = 300 }) {
             }))
         : [];
 
-    if (!altitudeData.length) return <div>No data</div>;
+    if (!altitudeData.length) return <Text>No altitude data available</Text>;
 
+    // Min & max values
     const minMeters = Math.min(...altitudeData.map(d => d.meters));
     const maxMeters = Math.max(...altitudeData.map(d => d.meters));
     const minAltitude = Math.min(...altitudeData.map(d => d.altitude));
@@ -27,7 +32,6 @@ export default function Altitude({ maxWidth = 600, maxHeight = 300 }) {
     const dataWidth = maxMeters - minMeters;
     const dataHeight = maxAltitude - minAltitude;
     const dataAspect = dataWidth / dataHeight;
-
     const boxAspect = maxWidth / maxHeight;
 
     let plotWidth, plotHeight, offsetX, offsetY;
@@ -49,17 +53,27 @@ export default function Altitude({ maxWidth = 600, maxHeight = 300 }) {
     const y = altitude => offsetY + plotHeight - ((altitude - minAltitude) / dataHeight) * plotHeight;
 
     const pathData = altitudeData.map((d, i) =>
-        `${i === 0 ? 'M' : 'L'}${x(d.meters)},${y(d.altitude)}`
+        `${i === 0 ? 'M' : 'L'} ${x(d.meters)} ${y(d.altitude)}`
     ).join(' ');
 
-    // Removed unused xTickValues and yTickValues
-
     return (
-        <div className="altitude-container" style={{ maxWidth, maxHeight }}>
-            <svg width={maxWidth} height={maxHeight} style={{ border: '1px solid #ccc', background: '#fafafa' }}>
-                {/* Graph path */}
-                <path d={pathData} fill="none" stroke="#0074d9" strokeWidth="2" />
-            </svg>
-        </div>
+        <View style={styles.altitudeContainer}>
+            <Svg width={maxWidth} height={maxHeight} style={styles.svgStyle}>
+                <Path d={pathData} fill="none" stroke="#0074d9" strokeWidth={2} />
+            </Svg>
+        </View>
     );
 }
+
+// Styles
+const styles = StyleSheet.create({
+    altitudeContainer: {
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: "#fafafa",
+    },
+    svgStyle: {
+        borderWidth: 1,
+        borderColor: "#ccc",
+    },
+});
