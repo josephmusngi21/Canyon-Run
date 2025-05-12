@@ -11,10 +11,16 @@ export default function App() {
   return (
     <ScrollView contentContainerStyle={styles.scrollContainer}>
       <View style={styles.container}>
-        <View style={styles.mapContainer}>
-          <Maps />
-          <Altitude />
-        </View>
+        {display ? (
+          <Button title="Show" onPress={() => setDisplay(!display)} />
+        ) : (
+          <View style={styles.mapContainer}>
+            <Maps />
+            <Altitude />
+            <Button title="Hide" onPress={() => setDisplay(!display)} />
+          </View>
+        )}
+
         <AddRun />
       </View>
     </ScrollView>
