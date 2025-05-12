@@ -11,7 +11,10 @@
   "description": "",
   "dependencies": {
     "@babel/runtime": "^7.27.1",
-    "@expo/metro-runtime": "~4.0.1"
+    "@expo/metro-runtime": "^5.0.4",
+    "expo": "^53.0.0",
+    "react-dom": "19.0.0",
+    "react-native-web": "^0.20.0"
   },
   "devDependencies": {
     "@react-native-community/cli": "^18.0.0"
