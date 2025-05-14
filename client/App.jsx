@@ -8,22 +8,42 @@ import AddRun from "./components/pages/Add/AddRun";
 export default function App() {
   const [display, setDisplay] = useState(false);
 
-  return (
-    <ScrollView contentContainerStyle={styles.scrollContainer}>
-      <View style={styles.container}>
-        {display ? (
-          <Button title="Show" onPress={() => setDisplay(!display)} />
-        ) : (
-          <View style={styles.mapContainer}>
-            <Maps />
-            <Altitude />
-            <Button title="Hide" onPress={() => setDisplay(!display)} />
-          </View>
-        )}
+  const showingMaps = () => {
 
-        <AddRun />
+
+    return (
+      <View style={styles.mapContainer}>
+        <Maps />
+        <Altitude />
       </View>
-    </ScrollView>
+    )
+  }
+
+  return (
+    <View style={styles.container}>
+      {/* <ScrollView styles={styles.scrollContainer}>
+        {display ? (
+          <View>
+            <Button 
+            title="Hide"
+            onPress={() => {
+              setDisplay(!display);
+            }}
+            />
+          </View>
+        ) : (
+          <Button 
+          title="Show"
+          onPress={() => {
+            setDisplay(!display);
+          }}
+          />
+        )}
+      </ScrollView> */}
+      <AddRun />
+      {/* <Maps /> */}
+      {/* <Text>Hello</Text> */}
+    </View>
   );
 }
 
