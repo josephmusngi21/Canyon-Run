@@ -40,9 +40,10 @@ export default function App() {
           />
         )}
       </ScrollView> */}
-      <AddRun />
+      {/* <AddRun /> */}
       {/* <Maps /> */}
       {/* <Text>Hello</Text> */}
+      <Text>Hello</Text>
     </View>
   );
 }
