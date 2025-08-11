@@ -18,11 +18,12 @@
     "@expo/metro-runtime": "~5.0.4",
     "expo": "^53.0.0",
     "expo-cli": "^6.3.10",
-    "react": "19.0.0",
-    "react-dom": "19.0.0",
-    "react-native": "0.79.5",
-    "react-native-svg": "15.11.2",
-    "react-native-web": "^0.20.0"
+    "react": "19.1.0",
+    "react-dom": "^19.1.0",
+    "react-native": "^0.80.2",
+    "react-native-svg": "^15.11.2",
+    "react-native-web": "^0.20.0",
+    "warn-once": "^0.1.1"
   },
   "devDependencies": {
     "@expo/cli": "^0.24.20",
