@@ -2,8 +2,12 @@
   "name": "client",
   "version": "1.0.0",
   "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+
+   "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web"
   },
   "keywords": [],
   "author": "",
@@ -11,14 +15,17 @@
   "description": "",
   "dependencies": {
     "@babel/runtime": "^7.27.1",
-    "@expo/metro-runtime": "^5.0.4",
+    "@expo/metro-runtime": "~5.0.4",
     "expo": "^53.0.0",
     "expo-cli": "^6.3.10",
+    "react": "19.0.0",
     "react-dom": "19.0.0",
-    "react-native-svg": "^15.11.2",
+    "react-native": "0.79.5",
+    "react-native-svg": "15.11.2",
     "react-native-web": "^0.20.0"
   },
   "devDependencies": {
+    "@expo/cli": "^0.24.20",
     "@react-native-community/cli": "^18.0.0"
   }
 }
