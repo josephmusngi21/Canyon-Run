@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { StyleSheet, View } from "react-native";
-import Track from './components/pages/Tracker/Track';
+import ViewSelector from './components/ViewSelector';
 import FileManager from './components/FileManager';
 
 export default function App() {
@@ -17,7 +17,7 @@ export default function App() {
       {!fileReady ? (
         <FileManager onFileReady={handleFileReady} />
       ) : (
-        <Track 
+        <ViewSelector 
           initialSavedRuns={savedRuns} 
           onFileManagerRequest={() => setFileReady(false)} 
         />
