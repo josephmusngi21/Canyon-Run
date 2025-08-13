@@ -5,53 +5,43 @@ import {
   Text, 
   Modal, 
   TouchableOpacity, 
-  PanResponder,
   Dimensions 
 } from "react-native";
-import Svg, { Path, Circle, G } from "react-native-svg";
-import exampleData from "../../jsonCanyon.json";
+import Svg, { Path, Circle } from "react-native-svg";
 
 const { width: screenWidth } = Dimensions.get('window');
 
-export default function Maps() {
-  const [hoveredPoint, setHoveredPoint] = useState(null);
+export default function Maps({ runData = null }) {
   const [selectedPoint, setSelectedPoint] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
-  const [touchPosition, setTouchPosition] = useState({ x: 0, y: 0 });
 
   const mapWidth = Math.min(screenWidth - 40, 350);
   const mapHeight = 250;
   const padding = 20;
-  const hoverRadius = 30; // Increased for better mobile touch
+  const hoverRadius = 30;
 
-  // Ensure JSON structure is valid
-  if (!exampleData || Object.keys(exampleData).length === 0) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>Error: Invalid JSON structure</Text>
-      </View>
-    );
-  }
-
-  const runId = Object.keys(exampleData)[0];
-  const runData = exampleData[runId];
-
+  // Use provided runData or show empty state
   if (!runData || !runData.coordinates || runData.coordinates.length === 0) {
     return (
       <View style={styles.container}>
-        <Text style={styles.errorText}>Error: No coordinates found in run data</Text>
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyTitle}>No Route Data</Text>
+          <Text style={styles.emptyText}>
+            Complete a tracking session to view the route map
+          </Text>
+        </View>
       </View>
     );
   }
 
-  // Process and simplify coordinates for performance
+  // Process coordinates
   const processedCoordinates = useMemo(() => {
     try {
       const coords = runData.coordinates.map((p, index) => ({
         latitude: parseFloat(p.latitude),
         longitude: parseFloat(p.longitude),
         altitude: parseFloat(p.altitude) || 0,
-        meters: parseFloat(p.meters) || 0,
+        timestamp: p.timestamp,
         index: index,
       }));
 
@@ -62,11 +52,10 @@ export default function Maps() {
       );
 
       if (validCoords.length === 0) {
-        console.log("No valid coordinates found");
         return [];
       }
 
-      // Intelligent coordinate reduction for performance
+      // Simplify coordinates for performance
       const totalPoints = validCoords.length;
       let step = 1;
       
@@ -79,7 +68,6 @@ export default function Maps() {
         index % step === 0
       );
       
-      console.log(`Processed ${totalPoints} coordinates, simplified to ${simplified.length}`);
       return simplified;
     } catch (error) {
       console.error("Error processing coordinates:", error);
@@ -87,10 +75,9 @@ export default function Maps() {
     }
   }, [runData.coordinates]);
 
-  // Calculate map bounds and transformations
+  // Calculate map bounds
   const mapBounds = useMemo(() => {
     if (processedCoordinates.length === 0) {
-      console.log("No processed coordinates for map bounds");
       return null;
     }
 
@@ -107,7 +94,6 @@ export default function Maps() {
       const dataHeight = maxLat - minLat;
       
       if (dataWidth === 0 || dataHeight === 0) {
-        console.log("Invalid data dimensions");
         return null;
       }
       
@@ -118,7 +104,6 @@ export default function Maps() {
       const offsetX = (availableWidth - dataWidth * scale) / 2 + padding;
       const offsetY = (availableHeight - dataHeight * scale) / 2 + padding;
       
-      console.log(`Map bounds calculated: ${minLat}, ${maxLat}, ${minLon}, ${maxLon}`);
       return {
         minLat, maxLat, minLon, maxLon,
         scale, offsetX, offsetY
@@ -129,7 +114,7 @@ export default function Maps() {
     }
   }, [processedCoordinates, mapWidth, mapHeight, padding]);
 
-  // Transform geographic coordinates to screen coordinates
+  // Transform coordinates
   const geoToScreen = useCallback((lat, lon) => {
     if (!mapBounds) return { x: 0, y: 0 };
     
@@ -139,7 +124,7 @@ export default function Maps() {
     return { x, y };
   }, [mapBounds, mapHeight]);
 
-  // Generate path data for the trail
+  // Generate path data
   const pathData = useMemo(() => {
     if (!mapBounds || processedCoordinates.length === 0) return "";
     
@@ -150,7 +135,7 @@ export default function Maps() {
     }).join(" ");
   }, [processedCoordinates, mapBounds, mapHeight]);
 
-  // Find closest point to touch/mouse position
+  // Find closest point to touch
   const findClosestPoint = useCallback((touchX, touchY) => {
     if (!mapBounds) return null;
     
@@ -170,79 +155,24 @@ export default function Maps() {
     return closestPoint;
   }, [processedCoordinates, geoToScreen, mapBounds, hoverRadius]);
 
-  // Simplified pan responder for better mobile compatibility
-  const panResponder = useMemo(() => PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onMoveShouldSetPanResponder: () => false, // Disable move to avoid conflicts
-    
-    onPanResponderGrant: (evt) => {
-      try {
-        const { locationX, locationY } = evt.nativeEvent;
-        const closestPoint = findClosestPoint(locationX, locationY);
-        
-        if (closestPoint) {
-          setSelectedPoint(closestPoint);
-          setModalVisible(true);
-        }
-      } catch (error) {
-        console.error("Touch error:", error);
-      }
-    },
-    
-    onPanResponderRelease: () => {
-      setHoveredPoint(null);
-    },
-    
-    onPanResponderTerminate: () => {
-      setHoveredPoint(null);
-    }
-  }), [findClosestPoint]);
-
-  // Get start and end coordinates
-  const startCoord = useMemo(() => {
-    if (runData.start) {
-      return {
-        latitude: parseFloat(runData.start.latitude),
-        longitude: parseFloat(runData.start.longitude),
-        altitude: parseFloat(runData.start.altitude) || 0,
-        meters: parseFloat(runData.start.meters) || 0
-      };
-    }
-    return processedCoordinates[0] || null;
-  }, [runData.start, processedCoordinates]);
-
-  const endCoord = useMemo(() => {
-    if (runData.end) {
-      return {
-        latitude: parseFloat(runData.end.latitude),
-        longitude: parseFloat(runData.end.longitude),
-        altitude: parseFloat(runData.end.altitude) || 0,
-        meters: parseFloat(runData.end.meters) || 0
-      };
-    }
-    return processedCoordinates[processedCoordinates.length - 1] || null;
-  }, [runData.end, processedCoordinates]);
-
   if (!mapBounds || processedCoordinates.length === 0) {
     return (
       <View style={styles.container}>
         <Text style={styles.errorText}>Error: No valid coordinates found</Text>
-        <Text style={styles.errorText}>
-          Processed: {processedCoordinates.length} coordinates
-        </Text>
-        <Text style={styles.errorText}>
-          Map bounds: {mapBounds ? "✓" : "✗"}
-        </Text>
       </View>
     );
   }
 
+  const startCoord = processedCoordinates[0];
+  const endCoord = processedCoordinates[processedCoordinates.length - 1];
   const startScreen = geoToScreen(startCoord.latitude, startCoord.longitude);
   const endScreen = geoToScreen(endCoord.latitude, endCoord.longitude);
-  const hoveredScreen = hoveredPoint ? geoToScreen(hoveredPoint.latitude, hoveredPoint.longitude) : null;
 
   return (
     <View style={styles.container}>
+      <Text style={styles.title}>Route Map</Text>
+      <Text style={styles.subtitle}>{runData.location || 'Canyon Run'}</Text>
+      
       <View style={styles.mapContainer}>
         <TouchableOpacity 
           style={[styles.svgContainer, { width: mapWidth, height: mapHeight }]}
@@ -276,40 +206,37 @@ export default function Maps() {
             <Circle 
               cx={startScreen.x} 
               cy={startScreen.y} 
-              r={7} 
+              r={8} 
               fill="#10b981" 
               stroke="#ffffff" 
-              strokeWidth={2}
+              strokeWidth={3}
             />
 
             {/* End marker */}
             <Circle 
               cx={endScreen.x} 
               cy={endScreen.y} 
-              r={7} 
+              r={8} 
               fill="#ef4444" 
               stroke="#ffffff" 
-              strokeWidth={2}
+              strokeWidth={3}
             />
-
-            {/* Debug: Show a few sample points */}
-            {processedCoordinates.slice(0, 5).map((point, index) => {
-              const screenPos = geoToScreen(point.latitude, point.longitude);
-              return (
-                <Circle 
-                  key={index}
-                  cx={screenPos.x} 
-                  cy={screenPos.y} 
-                  r={3} 
-                  fill="rgba(255, 0, 0, 0.5)" 
-                />
-              );
-            })}
           </Svg>
         </TouchableOpacity>
       </View>
 
-      {/* Coordinate Information Modal */}
+      <View style={styles.legend}>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, { backgroundColor: '#10b981' }]} />
+          <Text style={styles.legendText}>Start</Text>
+        </View>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, { backgroundColor: '#ef4444' }]} />
+          <Text style={styles.legendText}>End</Text>
+        </View>
+      </View>
+
+      {/* Modal for point details */}
       <Modal
         animationType="fade"
         transparent={true}
@@ -339,12 +266,14 @@ export default function Maps() {
                   </Text>
                 </View>
                 
-                <View style={styles.infoRow}>
-                  <Text style={styles.label}>Distance:</Text>
-                  <Text style={styles.value}>
-                    {selectedPoint.meters ? `${selectedPoint.meters.toFixed(1)} m` : 'N/A'}
-                  </Text>
-                </View>
+                {selectedPoint.timestamp && (
+                  <View style={styles.infoRow}>
+                    <Text style={styles.label}>Time:</Text>
+                    <Text style={styles.value}>
+                      {new Date(selectedPoint.timestamp).toLocaleTimeString()}
+                    </Text>
+                  </View>
+                )}
               </View>
             )}
             
@@ -358,9 +287,8 @@ export default function Maps() {
         </View>
       </Modal>
 
-      {/* Instructions */}
       <Text style={styles.instructions}>
-        Tap anywhere on the trail to view coordinates • Debug mode with sample points
+        Tap on the trail to view location details
       </Text>
     </View>
   );
@@ -374,6 +302,34 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     margin: 10,
+    width: '100%',
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1e293b',
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#64748b',
+    marginBottom: 16,
+  },
+  emptyState: {
+    alignItems: 'center',
+    padding: 40,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#64748b',
+    marginBottom: 8,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#94a3b8',
+    textAlign: 'center',
+    lineHeight: 20,
   },
   mapContainer: {
     backgroundColor: '#ffffff',
@@ -384,6 +340,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3.84,
+    marginBottom: 12,
   },
   svgContainer: {
     backgroundColor: '#ffffff',
@@ -393,6 +350,29 @@ const styles = StyleSheet.create({
   svg: {
     backgroundColor: '#fafbfc',
   },
+  legend: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 20,
+    marginBottom: 12,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  legendDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#ffffff',
+  },
+  legendText: {
+    fontSize: 14,
+    color: '#64748b',
+    fontWeight: '500',
+  },
   errorText: {
     fontSize: 16,
     color: '#ef4444',
@@ -400,12 +380,11 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   instructions: {
-    marginTop: 16,
-    fontSize: 13,
-    color: '#64748b',
+    fontSize: 12,
+    color: '#94a3b8',
     textAlign: 'center',
     fontStyle: 'italic',
-    lineHeight: 18,
+    lineHeight: 16,
   },
   modalOverlay: {
     flex: 1,
