@@ -3,7 +3,7 @@ import { StyleSheet, Text, View, Alert, Button, TouchableOpacity, Share, Clipboa
 import * as Location from "expo-location";
 import { loadRuns, saveRun, updateRunLocation, getCurrentFileInfo, exportCurrentFile, deleteRun } from '../../../utils/dataManager';
 
-export default function Track({ initialSavedRuns = {}, onFileManagerRequest }) {
+export default function Track({ initialSavedRuns = {}, onFileManagerRequest, onRunSelect, onRunsUpdate }) {
     // State management
     const [locationGranted, setLocationGranted] = useState(false);
     const [userLocation, setUserLocation] = useState(null);
@@ -107,6 +107,10 @@ export default function Track({ initialSavedRuns = {}, onFileManagerRequest }) {
             const runs = await loadRuns();
             setSavedRuns(runs);
             setCurrentFileInfo(getCurrentFileInfo());
+            // Notify parent component of runs update
+            if (onRunsUpdate) {
+                onRunsUpdate(runs);
+            }
         } catch (error) {
             console.error('Error loading saved runs:', error);
         }
@@ -367,6 +371,12 @@ export default function Track({ initialSavedRuns = {}, onFileManagerRequest }) {
                                     </View>
 
                                     <View style={styles.routeActionsContainer}>
+                                        <TouchableOpacity 
+                                            style={styles.viewButton}
+                                            onPress={() => onRunSelect && onRunSelect(runData)}
+                                        >
+                                            <Text style={styles.viewButtonText}>View Map</Text>
+                                        </TouchableOpacity>
                                         <TouchableOpacity 
                                             style={styles.editButton}
                                             onPress={() => {
@@ -731,6 +741,19 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-around',
         marginTop: 10,
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    viewButton: {
+        backgroundColor: '#9C27B0',
+        paddingVertical: 8,
+        paddingHorizontal: 15,
+        borderRadius: 5,
+    },
+    viewButtonText: {
+        color: 'white',
+        fontSize: 12,
+        fontWeight: '600',
     },
     editButton: {
         backgroundColor: '#FF9800',
