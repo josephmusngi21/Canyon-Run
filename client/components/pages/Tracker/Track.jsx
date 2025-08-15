@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import { StyleSheet, Text, View, Alert, Button, TouchableOpacity, Share, Clipboard, TextInput, Modal, ScrollView } from "react-native";
+import { StyleSheet, Text, View, Alert, Button, TouchableOpacity, TextInput, Modal, ScrollView } from "react-native";
 import * as Location from "expo-location";
 import { loadRuns, saveRun, updateRunLocation, getCurrentFileInfo, exportCurrentFile, deleteRun } from '../../../utils/dataManager';
+import { theme, commonStyles } from '../../shared/theme';
 
 export default function Track({ initialSavedRuns = {}, onFileManagerRequest, onRunSelect, onRunsUpdate }) {
     // State management
@@ -10,6 +11,8 @@ export default function Track({ initialSavedRuns = {}, onFileManagerRequest, onR
     const [routeJson, setRouteJson] = useState([]);
     const [tracking, setTracking] = useState(false);
     const [trackingInterval, setTrackingInterval] = useState(5);
+    const [timeUnit, setTimeUnit] = useState('m'); // 'm' for meters, 's' for seconds
+    const [showTrackingOptions, setShowTrackingOptions] = useState(false);
     const [lastRecordedLocation, setLastRecordedLocation] = useState(null);
     const [savedRuns, setSavedRuns] = useState(initialSavedRuns);
     const [showSavedRuns, setShowSavedRuns] = useState(false);
@@ -35,6 +38,33 @@ export default function Track({ initialSavedRuns = {}, onFileManagerRequest, onR
         return R * c;
     };
 
+    // Calculate time taken for a run
+    const calculateTimeTaken = (runData) => {
+        if (!runData.coordinates || runData.coordinates.length < 2) {
+            return 'N/A';
+        }
+
+        const startTime = runData.coordinates[0].timestamp;
+        const endTime = runData.coordinates[runData.coordinates.length - 1].timestamp;
+        const durationMs = endTime - startTime;
+        
+        if (durationMs <= 0) {
+            return 'N/A';
+        }
+
+        const hours = Math.floor(durationMs / (1000 * 60 * 60));
+        const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((durationMs % (1000 * 60)) / 1000);
+
+        if (hours > 0) {
+            return `${hours}h ${minutes}m ${seconds}s`;
+        } else if (minutes > 0) {
+            return `${minutes}m ${seconds}s`;
+        } else {
+            return `${seconds}s`;
+        }
+    };
+
     const startTracking = async () => {
         if (!locationGranted) {
             Alert.alert("Location permission not granted");
@@ -44,8 +74,13 @@ export default function Track({ initialSavedRuns = {}, onFileManagerRequest, onR
         setTracking(true);
         setRouteJson([]);
         setLastRecordedLocation(null);
+        setShowTrackingOptions(false); // Hide options when tracking starts
 
         try {
+            // Convert interval to meters if using time-based tracking
+            const intervalInMs = timeUnit === 's' ? trackingInterval * 1000 : trackingInterval * 60000;
+            let lastRecordTime = 0;
+
             locationSubscription.current = await Location.watchPositionAsync(
                 {
                     accuracy: Location.Accuracy.BestForNavigation,
@@ -55,23 +90,35 @@ export default function Track({ initialSavedRuns = {}, onFileManagerRequest, onR
                 (location) => {
                     const { longitude, latitude, altitude } = location.coords;
                     setUserLocation(location.coords);
+                    const currentTime = Date.now();
 
                     if (!lastRecordedLocation) {
-                        const newRoute = { longitude, latitude, altitude, timestamp: Date.now() };
+                        const newRoute = { longitude, latitude, altitude, timestamp: currentTime };
                         setRouteJson(prev => [...prev, newRoute]);
                         setLastRecordedLocation({ latitude, longitude });
+                        lastRecordTime = currentTime;
                     } else {
-                        const distance = calculateDistance(
-                            lastRecordedLocation.latitude,
-                            lastRecordedLocation.longitude,
-                            latitude,
-                            longitude
-                        );
+                        let shouldRecord = false;
 
-                        if (distance >= trackingInterval) {
-                            const newRoute = { longitude, latitude, altitude, timestamp: Date.now() };
+                        if (timeUnit === 'm' || timeUnit === 's') {
+                            // Time-based recording
+                            shouldRecord = (currentTime - lastRecordTime) >= intervalInMs;
+                        } else {
+                            // Distance-based recording (original logic)
+                            const distance = calculateDistance(
+                                lastRecordedLocation.latitude,
+                                lastRecordedLocation.longitude,
+                                latitude,
+                                longitude
+                            );
+                            shouldRecord = distance >= trackingInterval;
+                        }
+
+                        if (shouldRecord) {
+                            const newRoute = { longitude, latitude, altitude, timestamp: currentTime };
                             setRouteJson(prev => [...prev, newRoute]);
                             setLastRecordedLocation({ latitude, longitude });
+                            lastRecordTime = currentTime;
                         }
                     }
                 }
@@ -152,28 +199,6 @@ export default function Track({ initialSavedRuns = {}, onFileManagerRequest, onR
         );
     };
 
-    const shareRouteData = async (runId, runData) => {
-        try {
-            const shareText = `Canyon Run Data - ${runData.location}\nDistance: ${runData.distance_miles} miles\nStart: ${runData.start.latitude}, ${runData.start.longitude}\nEnd: ${runData.end.latitude}, ${runData.end.longitude}`;
-            await Share.share({
-                message: shareText,
-                title: 'Canyon Run Route Data',
-            });
-        } catch (error) {
-            Alert.alert('Error sharing data', error.message);
-        }
-    };
-
-    const copyRouteToClipboard = async (runId, runData) => {
-        try {
-            const jsonString = JSON.stringify({ [runId]: runData }, null, 2);
-            await Clipboard.setString(jsonString);
-            Alert.alert('Copied!', 'Route data copied to clipboard');
-        } catch (error) {
-            Alert.alert('Error copying data', error.message);
-        }
-    };
-
     // Export current file to user's chosen location
     const handleExportCurrentFile = async () => {
         try {
@@ -244,6 +269,15 @@ export default function Track({ initialSavedRuns = {}, onFileManagerRequest, onR
         };
     }, []);
 
+    // Update tracking interval when time unit changes
+    useEffect(() => {
+        if (timeUnit === 'm') {
+            setTrackingInterval(5); // Default to 5 meters
+        } else if (timeUnit === 's') {
+            setTrackingInterval(0.5); // Default to 0.5 seconds
+        }
+    }, [timeUnit]);
+
     return (
         <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
             <View style={styles.header}>
@@ -274,47 +308,133 @@ export default function Track({ initialSavedRuns = {}, onFileManagerRequest, onR
             </View>
             
             {!tracking && (
-                <View style={styles.settingsContainer}>
-                    <Text style={styles.label}>Tracking Interval:</Text>
-                    <View style={styles.intervalButtonsContainer}>
-                        {[2.5, 5, 10].map((interval) => (
+                <View style={styles.trackingContainer}>
+                    {!showTrackingOptions ? (
+                        // Collapsed state - Show "Start Tracking" with expand arrow
+                        <TouchableOpacity 
+                            style={styles.startTrackingCollapsed}
+                            onPress={() => setShowTrackingOptions(true)}
+                        >
+                            <Text style={styles.startTrackingCollapsedText}>Start Tracking</Text>
+                            <Text style={styles.expandArrow}>→</Text>
+                        </TouchableOpacity>
+                    ) : (
+                        // Expanded state - Show all options
+                        <View style={styles.trackingOptionsExpanded}>
+                            <View style={styles.trackingHeader}>
+                                <Text style={styles.trackingTitle}>Tracking Settings</Text>
+                                <TouchableOpacity 
+                                    style={styles.collapseButton}
+                                    onPress={() => setShowTrackingOptions(false)}
+                                >
+                                    <Text style={styles.collapseArrow}>×</Text>
+                                </TouchableOpacity>
+                            </View>
+
+                            {/* Time Unit Selection */}
+                            <View style={styles.timeUnitContainer}>
+                                <Text style={styles.label}>Record every:</Text>
+                                <View style={styles.timeUnitButtons}>
+                                    <TouchableOpacity
+                                        style={[
+                                            styles.timeUnitButton,
+                                            timeUnit === 'm' && styles.selectedTimeUnitButton
+                                        ]}
+                                        onPress={() => setTimeUnit('m')}
+                                    >
+                                        <Text style={[
+                                            styles.timeUnitButtonText,
+                                            timeUnit === 'm' && styles.selectedTimeUnitButtonText
+                                        ]}>
+                                            Meters
+                                        </Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={[
+                                            styles.timeUnitButton,
+                                            timeUnit === 's' && styles.selectedTimeUnitButton
+                                        ]}
+                                        onPress={() => setTimeUnit('s')}
+                                    >
+                                        <Text style={[
+                                            styles.timeUnitButtonText,
+                                            timeUnit === 's' && styles.selectedTimeUnitButtonText
+                                        ]}>
+                                            Seconds
+                                        </Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+
+                            {/* Interval Selection */}
+                            <View style={styles.intervalContainer}>
+                                <Text style={styles.label}>Interval ({timeUnit === 'm' ? 'meters' : 'seconds'}):</Text>
+                                <View style={styles.intervalButtonsContainer}>
+                                    {timeUnit === 'm' ? (
+                                        [2.5, 5, 10].map((interval) => (
+                                            <TouchableOpacity
+                                                key={interval}
+                                                style={[
+                                                    styles.intervalButton,
+                                                    trackingInterval === interval && styles.selectedIntervalButton
+                                                ]}
+                                                onPress={() => setTrackingInterval(interval)}
+                                            >
+                                                <Text style={[
+                                                    styles.intervalButtonText,
+                                                    trackingInterval === interval && styles.selectedIntervalButtonText
+                                                ]}>
+                                                    {interval}{timeUnit}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        ))
+                                    ) : (
+                                        [0.25, 0.5, 1].map((interval) => (
+                                            <TouchableOpacity
+                                                key={interval}
+                                                style={[
+                                                    styles.intervalButton,
+                                                    trackingInterval === interval && styles.selectedIntervalButton
+                                                ]}
+                                                onPress={() => setTrackingInterval(interval)}
+                                            >
+                                                <Text style={[
+                                                    styles.intervalButtonText,
+                                                    trackingInterval === interval && styles.selectedIntervalButtonText
+                                                ]}>
+                                                    {interval}{timeUnit}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        ))
+                                    )}
+                                </View>
+                            </View>
+
+                            {/* Start Tracking Button */}
                             <TouchableOpacity
-                                key={interval}
-                                style={[
-                                    styles.intervalButton,
-                                    trackingInterval === interval && styles.selectedIntervalButton
-                                ]}
-                                onPress={() => setTrackingInterval(interval)}
-                                disabled={tracking}
+                                style={[styles.startTrackingButton, !locationGranted && styles.disabledButton]}
+                                onPress={startTracking}
+                                disabled={!locationGranted}
                             >
-                                <Text style={[
-                                    styles.intervalButtonText,
-                                    trackingInterval === interval && styles.selectedIntervalButtonText
-                                ]}>
-                                    {interval}m
+                                <Text style={[styles.startTrackingButtonText, !locationGranted && styles.disabledButtonText]}>
+                                    Start Tracking
                                 </Text>
                             </TouchableOpacity>
-                        ))}
-                    </View>
+                        </View>
+                    )}
                 </View>
             )}
 
-            <View style={styles.buttonContainer}>
-                {!tracking ? (
-                    <Button
-                        title="Start Tracking"
-                        onPress={startTracking}
-                        disabled={!locationGranted}
-                        color="#4CAF50"
-                    />
-                ) : (
-                    <Button
-                        title="Stop Tracking"
+            {tracking && (
+                <View style={styles.buttonContainer}>
+                    <TouchableOpacity
+                        style={styles.stopTrackingButton}
                         onPress={stopTracking}
-                        color="#f44336"
-                    />
-                )}
-            </View>
+                    >
+                        <Text style={styles.stopTrackingButtonText}>Stop Tracking</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
 
             {/* Manual Save Button - shows when tracking is completed and there's data */}
             {hasStoppedTracking && routeJson.length > 0 && (
@@ -355,6 +475,9 @@ export default function Track({ initialSavedRuns = {}, onFileManagerRequest, onR
                                     <Text style={styles.routeDetailDate}>
                                         Distance: {runData.distance_miles} miles
                                     </Text>
+                                    <Text style={styles.routeDetailTime}>
+                                        Time: {calculateTimeTaken(runData)}
+                                    </Text>
                                     
                                     <View style={styles.coordinatesContainer}>
                                         <Text style={styles.coordinatesTitle}>Start Point:</Text>
@@ -385,18 +508,6 @@ export default function Track({ initialSavedRuns = {}, onFileManagerRequest, onR
                                             }}
                                         >
                                             <Text style={styles.editButtonText}>Edit Name</Text>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity 
-                                            style={styles.shareButton}
-                                            onPress={() => shareRouteData(runId, runData)}
-                                        >
-                                            <Text style={styles.shareButtonText}>Share</Text>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity 
-                                            style={styles.copyButton}
-                                            onPress={() => copyRouteToClipboard(runId, runData)}
-                                        >
-                                            <Text style={styles.copyButtonText}>Copy</Text>
                                         </TouchableOpacity>
                                         <TouchableOpacity 
                                             style={styles.deleteButton}
@@ -494,44 +605,32 @@ export default function Track({ initialSavedRuns = {}, onFileManagerRequest, onR
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        paddingTop: 20,
-        marginTop: 35,
-        backgroundColor: '#f5f5f5',
-        width: '100%',
+        backgroundColor: theme.colors.background,
+        paddingTop: theme.spacing.xl,
     },
     scrollContent: {
-        paddingHorizontal: 15,
-        paddingBottom: 40,
+        paddingHorizontal: theme.spacing.lg,
+        paddingBottom: theme.spacing.xxxl,
     },
     header: {
-        paddingTop: 40,
-        paddingBottom: 10,
+        paddingTop: theme.spacing.xxxl,
+        paddingBottom: theme.spacing.md,
         width: '100%',
     },
     title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        textAlign: 'center',
-        marginBottom: 20,
-        color: '#333',
+        ...commonStyles.title,
+        color: theme.colors.text.primary,
     },
     settingsContainer: {
-        marginBottom: 20,
-        backgroundColor: 'white',
-        padding: 15,
-        borderRadius: 10,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-        width: '100%',
+        ...commonStyles.card,
+        marginBottom: theme.spacing.xl,
     },
     label: {
         fontSize: 16,
         fontWeight: '600',
-        marginBottom: 10,
-        color: '#333',
+        marginBottom: theme.spacing.md,
+        color: '#374151',
+        letterSpacing: -0.2,
     },
     picker: {
         height: 50,
@@ -539,268 +638,429 @@ const styles = StyleSheet.create({
     },
     intervalButtonsContainer: {
         flexDirection: 'row',
-        justifyContent: 'space-around',
-        marginTop: 10,
+        justifyContent: 'space-between',
+        marginTop: theme.spacing.md,
+        gap: 12,
     },
     intervalButton: {
-        backgroundColor: '#e0e0e0',
-        paddingVertical: 12,
+        backgroundColor: '#f8fafc',
+        paddingVertical: 14,
         paddingHorizontal: 20,
-        borderRadius: 25,
-        minWidth: 60,
+        borderRadius: 20,
+        flex: 1,
         alignItems: 'center',
+        borderWidth: 1.5,
+        borderColor: '#e2e8f0',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.04,
+        shadowRadius: 2,
+        elevation: 1,
     },
     selectedIntervalButton: {
-        backgroundColor: '#2196F3',
+        backgroundColor: '#2563eb',
+        borderColor: '#2563eb',
+        shadowColor: '#2563eb',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 8,
+        elevation: 4,
     },
     intervalButtonText: {
-        fontSize: 16,
+        fontSize: 15,
         fontWeight: '600',
-        color: '#333',
+        color: '#64748b',
+        letterSpacing: -0.2,
     },
     selectedIntervalButtonText: {
-        color: 'white',
+        color: '#ffffff',
+    },
+    // New collapsible tracking styles
+    trackingContainer: {
+        marginBottom: theme.spacing.lg,
+        width: '100%',
+    },
+    startTrackingCollapsed: {
+        backgroundColor: '#10b981',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: 18,
+        paddingHorizontal: 24,
+        borderRadius: 16,
+        shadowColor: '#10b981',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 12,
+        elevation: 5,
+        borderWidth: 0,
+    },
+    startTrackingCollapsedText: {
+        fontSize: 17,
+        fontWeight: '700',
+        color: '#ffffff',
+        letterSpacing: -0.3,
+    },
+    expandArrow: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#ffffff',
+        opacity: 0.9,
+    },
+    trackingOptionsExpanded: {
+        backgroundColor: '#ffffff',
+        padding: theme.spacing.xl,
+        borderRadius: 20,
+        marginBottom: theme.spacing.lg,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.12,
+        shadowRadius: 24,
+        elevation: 8,
+        borderWidth: 1,
+        borderColor: '#f1f5f9',
+    },
+    trackingHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: theme.spacing.xl,
+        paddingBottom: theme.spacing.md,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f1f5f9',
+    },
+    trackingTitle: {
+        fontSize: 22,
+        fontWeight: '700',
+        color: '#1e293b',
+        letterSpacing: -0.5,
+    },
+    collapseButton: {
+        backgroundColor: '#f8fafc',
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1.5,
+        borderColor: '#e2e8f0',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    collapseArrow: {
+        fontSize: 20,
+        fontWeight: '600',
+        color: '#64748b',
+        lineHeight: 20,
+    },
+    timeUnitContainer: {
+        marginBottom: theme.spacing.xl,
+    },
+    timeUnitButtons: {
+        flexDirection: 'row',
+        backgroundColor: '#f8fafc',
+        borderRadius: 16,
+        padding: 4,
+        marginTop: theme.spacing.md,
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+    },
+    timeUnitButton: {
+        paddingVertical: 12,
+        paddingHorizontal: 24,
+        borderRadius: 12,
+        flex: 1,
+        alignItems: 'center',
+        marginHorizontal: 2,
+        backgroundColor: 'transparent',
+    },
+    selectedTimeUnitButton: {
+        backgroundColor: '#ffffff',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        elevation: 3,
+    },
+    timeUnitButtonText: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: '#64748b',
+        letterSpacing: -0.2,
+    },
+    selectedTimeUnitButtonText: {
+        color: '#1e293b',
+    },
+    intervalContainer: {
+        marginBottom: theme.spacing.xl,
+    },
+    startTrackingButton: {
+        backgroundColor: '#10b981',
+        paddingVertical: 18,
+        paddingHorizontal: theme.spacing.xl,
+        borderRadius: 16,
+        alignItems: 'center',
+        shadowColor: '#10b981',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
+        elevation: 6,
+        borderWidth: 0,
+        marginTop: theme.spacing.md,
+    },
+    startTrackingButtonText: {
+        fontSize: 17,
+        fontWeight: '700',
+        color: '#ffffff',
+        letterSpacing: -0.3,
+    },
+    disabledButton: {
+        backgroundColor: '#9ca3af',
+        borderColor: '#6b7280',
+    },
+    disabledButtonText: {
+        color: '#d1d5db',
+    },
+    stopTrackingButton: {
+        backgroundColor: '#dc2626',
+        paddingVertical: theme.spacing.lg,
+        paddingHorizontal: theme.spacing.xl,
+        borderRadius: theme.borderRadius.lg,
+        alignItems: 'center',
+        ...theme.shadows.default,
+        borderWidth: 2,
+        borderColor: '#b91c1c',
+    },
+    stopTrackingButtonText: {
+        fontSize: theme.typography.fontSize.lg,
+        fontWeight: theme.typography.fontWeight.bold,
+        color: '#ffffff',
     },
     buttonContainer: {
-        marginBottom: 20,
+        marginBottom: theme.spacing.lg,
         width: '100%',
     },
     infoContainer: {
-        backgroundColor: 'white',
-        padding: 15,
-        borderRadius: 10,
-        marginBottom: 20,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
+        backgroundColor: theme.colors.surface,
+        padding: theme.spacing.lg,
+        borderRadius: theme.borderRadius.lg,
+        marginBottom: theme.spacing.lg,
+        ...theme.shadows.default,
         width: '100%',
     },
     coordText: {
-        fontSize: 14,
-        marginBottom: 5,
+        fontSize: theme.typography.fontSize.sm,
+        marginBottom: theme.spacing.xs,
         fontFamily: 'monospace',
-        color: '#555',
+        color: theme.colors.text.secondary,
     },
     loadingText: {
-        fontSize: 16,
+        fontSize: theme.typography.fontSize.md,
         textAlign: 'center',
-        color: '#666',
+        color: theme.colors.text.secondary,
     },
     savedRoutesContainer: {
-        backgroundColor: 'white',
-        padding: 15,
-        borderRadius: 10,
-        marginTop: 20,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
+        backgroundColor: theme.colors.surface,
+        padding: theme.spacing.lg,
+        borderRadius: theme.borderRadius.lg,
+        marginTop: theme.spacing.lg,
+        ...theme.shadows.default,
         width: '100%',
     },
     savedRoutesTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        marginBottom: 15,
-        color: '#333',
+        fontSize: theme.typography.fontSize.lg,
+        fontWeight: theme.typography.fontWeight.bold,
+        marginBottom: theme.spacing.lg,
+        color: theme.colors.text.primary,
     },
     exportButtonsContainer: {
-        marginBottom: 15,
+        marginBottom: theme.spacing.lg,
     },
     fileActionsContainer: {
         flexDirection: 'row',
         justifyContent: 'space-around',
-        marginBottom: 15,
+        marginBottom: theme.spacing.lg,
         width: '100%',
     },
     fileActionButton: {
-        backgroundColor: '#FF9800',
-        paddingVertical: 10,
-        paddingHorizontal: 15,
-        borderRadius: 8,
+        backgroundColor: theme.colors.warning,
+        paddingVertical: theme.spacing.sm,
+        paddingHorizontal: theme.spacing.lg,
+        borderRadius: theme.borderRadius.md,
         flex: 1,
-        marginHorizontal: 5,
+        marginHorizontal: theme.spacing.xs,
         alignItems: 'center',
     },
     fileActionButtonText: {
-        color: 'white',
-        fontSize: 14,
-        fontWeight: '600',
+        color: theme.colors.text.white,
+        fontSize: theme.typography.fontSize.sm,
+        fontWeight: theme.typography.fontWeight.semibold,
     },
     routeItem: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingVertical: 10,
+        paddingVertical: theme.spacing.sm,
         borderBottomWidth: 1,
-        borderBottomColor: '#eee',
+        borderBottomColor: theme.colors.border,
     },
     routeItemText: {
         flex: 1,
-        fontSize: 14,
-        color: '#555',
+        fontSize: theme.typography.fontSize.sm,
+        color: theme.colors.text.secondary,
     },
     routeActions: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 8,
+        gap: theme.spacing.xs,
         justifyContent: 'flex-end',
     },
     actionButton: {
-        backgroundColor: '#2196F3',
-        paddingVertical: 6,
-        paddingHorizontal: 12,
-        borderRadius: 5,
+        backgroundColor: theme.colors.primary,
+        paddingVertical: theme.spacing.xs,
+        paddingHorizontal: theme.spacing.md,
+        borderRadius: theme.borderRadius.sm,
     },
     actionButtonText: {
-        color: 'white',
-        fontSize: 12,
-        fontWeight: '600',
+        color: theme.colors.text.white,
+        fontSize: theme.typography.fontSize.xs,
+        fontWeight: theme.typography.fontWeight.semibold,
     },
     savedRoutesHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 15,
+        marginBottom: theme.spacing.lg,
     },
     toggleButton: {
-        backgroundColor: '#2196F3',
-        paddingVertical: 8,
-        paddingHorizontal: 15,
-        borderRadius: 5,
+        backgroundColor: theme.colors.primary,
+        paddingVertical: theme.spacing.xs,
+        paddingHorizontal: theme.spacing.lg,
+        borderRadius: theme.borderRadius.sm,
     },
     toggleButtonText: {
-        color: 'white',
-        fontSize: 14,
-        fontWeight: '600',
+        color: theme.colors.text.white,
+        fontSize: theme.typography.fontSize.sm,
+        fontWeight: theme.typography.fontWeight.semibold,
     },
     simpleRouteItem: {
-        padding: 8,
-        marginVertical: 2,
-        backgroundColor: '#f5f5f5',
-        borderRadius: 4,
+        padding: theme.spacing.xs,
+        marginVertical: theme.spacing.xxs,
+        backgroundColor: theme.colors.surfaceLight,
+        borderRadius: theme.borderRadius.sm,
         borderLeftWidth: 3,
-        borderLeftColor: '#2196F3',
+        borderLeftColor: theme.colors.primary,
     },
     simpleRouteText: {
-        fontSize: 16,
-        color: '#333',
-        fontWeight: '500',
+        fontSize: theme.typography.fontSize.md,
+        color: theme.colors.text.primary,
+        fontWeight: theme.typography.fontWeight.medium,
     },
     moreRunsText: {
-        fontSize: 14,
-        color: '#666',
+        fontSize: theme.typography.fontSize.sm,
+        color: theme.colors.text.secondary,
         fontStyle: 'italic',
         textAlign: 'center',
-        marginTop: 5,
-        padding: 5,
+        marginTop: theme.spacing.xs,
+        padding: theme.spacing.xs,
     },
     routesList: {
-        maxHeight: 400,
+        maxHeight: 500,
     },
     routeDetailsContainer: {
-        backgroundColor: '#f8f9fa',
-        padding: 15,
-        marginBottom: 15,
-        borderRadius: 10,
+        backgroundColor: theme.colors.surfaceLight,
+        padding: theme.spacing.lg,
+        marginBottom: theme.spacing.lg,
+        borderRadius: theme.borderRadius.lg,
         borderLeftWidth: 4,
-        borderLeftColor: '#4CAF50',
+        borderLeftColor: theme.colors.success,
     },
     routeDetailTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 5,
+        fontSize: theme.typography.fontSize.lg,
+        fontWeight: theme.typography.fontWeight.bold,
+        color: theme.colors.text.primary,
+        marginBottom: theme.spacing.xs,
     },
     routeDetailDate: {
-        fontSize: 14,
-        color: '#666',
-        marginBottom: 15,
+        fontSize: theme.typography.fontSize.sm,
+        color: theme.colors.text.secondary,
+        marginBottom: theme.spacing.xs,
+    },
+    routeDetailTime: {
+        fontSize: theme.typography.fontSize.sm,
+        color: theme.colors.text.secondary,
+        marginBottom: theme.spacing.lg,
+        fontWeight: theme.typography.fontWeight.medium,
     },
     coordinatesContainer: {
-        backgroundColor: 'white',
-        padding: 10,
-        borderRadius: 8,
-        marginBottom: 10,
+        backgroundColor: theme.colors.surface,
+        padding: theme.spacing.sm,
+        borderRadius: theme.borderRadius.md,
+        marginBottom: theme.spacing.sm,
     },
     coordinatesTitle: {
-        fontSize: 14,
-        fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 5,
+        fontSize: theme.typography.fontSize.sm,
+        fontWeight: theme.typography.fontWeight.bold,
+        color: theme.colors.text.primary,
+        marginBottom: theme.spacing.xs,
     },
     coordinateText: {
-        fontSize: 12,
+        fontSize: theme.typography.fontSize.xs,
         fontFamily: 'monospace',
-        color: '#555',
-        marginBottom: 2,
+        color: theme.colors.text.secondary,
+        marginBottom: theme.spacing.xxs,
     },
     routeActionsContainer: {
         flexDirection: 'row',
-        justifyContent: 'space-around',
-        marginTop: 10,
-        flexWrap: 'wrap',
-        gap: 8,
+        justifyContent: 'space-between',
+        marginTop: theme.spacing.md,
+        paddingHorizontal: theme.spacing.sm,
+        gap: theme.spacing.sm,
     },
     viewButton: {
-        backgroundColor: '#9C27B0',
-        paddingVertical: 8,
-        paddingHorizontal: 15,
-        borderRadius: 5,
+        backgroundColor: theme.colors.secondary,
+        paddingVertical: theme.spacing.sm,
+        paddingHorizontal: theme.spacing.lg,
+        borderRadius: theme.borderRadius.sm,
+        minWidth: 80,
+        alignItems: 'center',
     },
     viewButtonText: {
-        color: 'white',
-        fontSize: 12,
-        fontWeight: '600',
+        color: theme.colors.text.white,
+        fontSize: theme.typography.fontSize.sm,
+        fontWeight: theme.typography.fontWeight.semibold,
     },
     editButton: {
-        backgroundColor: '#FF9800',
-        paddingVertical: 8,
-        paddingHorizontal: 15,
-        borderRadius: 5,
+        backgroundColor: '#1976d2',
+        paddingVertical: theme.spacing.sm,
+        paddingHorizontal: theme.spacing.lg,
+        borderRadius: theme.borderRadius.sm,
+        minWidth: 80,
+        alignItems: 'center',
     },
     editButtonText: {
-        color: 'white',
-        fontSize: 12,
-        fontWeight: '600',
-    },
-    shareButton: {
-        backgroundColor: '#4CAF50',
-        paddingVertical: 8,
-        paddingHorizontal: 15,
-        borderRadius: 5,
-    },
-    shareButtonText: {
-        color: 'white',
-        fontSize: 12,
-        fontWeight: '600',
-    },
-    copyButton: {
-        backgroundColor: '#2196F3',
-        paddingVertical: 8,
-        paddingHorizontal: 15,
-        borderRadius: 5,
-    },
-    copyButtonText: {
-        color: 'white',
-        fontSize: 12,
-        fontWeight: '600',
+        color: theme.colors.text.white,
+        fontSize: theme.typography.fontSize.sm,
+        fontWeight: theme.typography.fontWeight.semibold,
     },
     deleteButton: {
-        backgroundColor: '#f44336',
-        paddingVertical: 8,
-        paddingHorizontal: 15,
-        borderRadius: 5,
+        backgroundColor: '#d32f2f',
+        paddingVertical: theme.spacing.sm,
+        paddingHorizontal: theme.spacing.lg,
+        borderRadius: theme.borderRadius.sm,
+        minWidth: 80,
+        alignItems: 'center',
     },
     deleteButtonText: {
-        color: 'white',
-        fontSize: 12,
-        fontWeight: '600',
+        color: theme.colors.text.white,
+        fontSize: theme.typography.fontSize.sm,
+        fontWeight: theme.typography.fontWeight.semibold,
     },
     deleteActionButton: {
-        backgroundColor: '#f44336',
+        backgroundColor: theme.colors.error,
     },
     modalOverlay: {
         flex: 1,
@@ -809,120 +1069,143 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     modalContent: {
-        backgroundColor: 'white',
-        padding: 20,
-        borderRadius: 15,
-        width: '80%',
-        maxWidth: 300,
+        backgroundColor: '#ffffff',
+        padding: theme.spacing.xl,
+        borderRadius: theme.borderRadius.xl,
+        width: '85%',
+        maxWidth: 350,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.25,
+        shadowRadius: 16,
+        elevation: 8,
     },
     modalTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
+        fontSize: 20,
+        fontWeight: '700',
         textAlign: 'center',
-        marginBottom: 20,
-        color: '#333',
+        marginBottom: theme.spacing.xl,
+        color: '#1e293b',
     },
     nameInput: {
-        borderWidth: 1,
-        borderColor: '#ddd',
-        borderRadius: 8,
-        padding: 12,
-        fontSize: 16,
-        marginBottom: 20,
+        borderWidth: 2,
+        borderColor: '#e2e8f0',
+        borderRadius: theme.borderRadius.md,
+        padding: theme.spacing.md,
+        fontSize: theme.typography.fontSize.md,
+        marginBottom: theme.spacing.lg,
+        backgroundColor: '#f8fafc',
+        color: '#1e293b',
     },
     modalButtons: {
         flexDirection: 'row',
-        justifyContent: 'space-around',
+        justifyContent: 'space-between',
+        marginTop: theme.spacing.md,
+        gap: theme.spacing.md,
     },
     cancelButton: {
-        backgroundColor: '#f44336',
-        paddingVertical: 12,
-        paddingHorizontal: 20,
-        borderRadius: 8,
+        backgroundColor: '#ef4444',
+        paddingVertical: theme.spacing.md,
+        paddingHorizontal: theme.spacing.lg,
+        borderRadius: theme.borderRadius.md,
+        flex: 1,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 2,
     },
     cancelButtonText: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: '600',
+        color: '#ffffff',
+        fontSize: theme.typography.fontSize.md,
+        fontWeight: theme.typography.fontWeight.semibold,
     },
     saveButton: {
-        backgroundColor: '#4CAF50',
-        paddingVertical: 12,
-        paddingHorizontal: 20,
-        borderRadius: 8,
+        backgroundColor: '#10b981',
+        paddingVertical: theme.spacing.md,
+        paddingHorizontal: theme.spacing.lg,
+        borderRadius: theme.borderRadius.md,
+        flex: 1,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 2,
     },
     saveButtonText: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: '600',
+        color: theme.colors.text.white,
+        fontSize: theme.typography.fontSize.md,
+        fontWeight: theme.typography.fontWeight.semibold,
     },
     // Header Styles
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 10,
-        paddingHorizontal: 10,
+        marginBottom: theme.spacing.sm,
+        paddingHorizontal: theme.spacing.sm,
     },
     currentFileDisplay: {
-        backgroundColor: 'white',
-        padding: 10,
-        borderRadius: 8,
-        marginBottom: 15,
+        backgroundColor: theme.colors.surface,
+        padding: theme.spacing.sm,
+        borderRadius: theme.borderRadius.md,
+        marginBottom: theme.spacing.lg,
         alignItems: 'center',
         width: '100%',
     },
     currentFileLabel: {
-        fontSize: 14,
-        fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 5,
+        fontSize: theme.typography.fontSize.sm,
+        fontWeight: theme.typography.fontWeight.bold,
+        color: theme.colors.text.primary,
+        marginBottom: theme.spacing.xs,
     },
     currentFileName: {
-        fontSize: 16,
-        color: '#1976D2',
-        fontWeight: '600',
+        fontSize: theme.typography.fontSize.md,
+        color: theme.colors.primary,
+        fontWeight: theme.typography.fontWeight.semibold,
     },
     fileNote: {
-        fontSize: 12,
-        color: '#666',
+        fontSize: theme.typography.fontSize.xs,
+        color: theme.colors.text.secondary,
         fontStyle: 'italic',
         textAlign: 'center',
-        marginTop: 5,
+        marginTop: theme.spacing.xs,
     },
     // Save Button Styles
     saveButtonContainer: {
-        marginVertical: 15,
+        marginVertical: theme.spacing.lg,
         width: '100%',
     },
     saveTrackButton: {
-        backgroundColor: '#2196F3',
-        paddingVertical: 15,
-        paddingHorizontal: 20,
-        borderRadius: 10,
+        backgroundColor: theme.colors.primary,
+        paddingVertical: theme.spacing.lg,
+        paddingHorizontal: theme.spacing.lg,
+        borderRadius: theme.borderRadius.lg,
         alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
-        elevation: 4,
+        ...theme.shadows.default,
     },
     saveTrackButtonText: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: '600',
+        color: theme.colors.text.white,
+        fontSize: theme.typography.fontSize.md,
+        fontWeight: theme.typography.fontWeight.semibold,
     },
     saveFileButton: {
-        backgroundColor: '#FF9800',
-        paddingVertical: 12,
-        paddingHorizontal: 20,
-        borderRadius: 8,
+        backgroundColor: '#f59e0b',
+        paddingVertical: 14,
+        paddingHorizontal: theme.spacing.lg,
+        borderRadius: theme.borderRadius.md,
         alignItems: 'center',
-        marginLeft: 10,
         flex: 1,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 2,
     },
     saveFileButtonText: {
-        color: 'white',
+        color: '#ffffff',
         fontSize: 16,
         fontWeight: '600',
     },
