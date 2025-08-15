@@ -23,8 +23,9 @@ export default function Track({ initialSavedRuns = {}, onFileManagerRequest, onR
     const locationSubscription = useRef(null);
 
     // Distance calculation using Haversine formula
+    // Calculates the distance (in meters) between two latitude/longitude points using the Haversine formula
     const calculateDistance = (lat1, lon1, lat2, lon2) => {
-        const R = 6371e3;
+        const R = 6371e3; // Earth's radius in meters
         const φ1 = lat1 * Math.PI/180;
         const φ2 = lat2 * Math.PI/180;
         const Δφ = (lat2-lat1) * Math.PI/180;
@@ -35,15 +36,17 @@ export default function Track({ initialSavedRuns = {}, onFileManagerRequest, onR
                 Math.sin(Δλ/2) * Math.sin(Δλ/2);
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 
-        return R * c;
+        return R * c; // Distance in meters
     };
 
-    // Calculate time taken for a run
+    // Calculates the total time taken for a run, given runData with coordinates and timestamps
     const calculateTimeTaken = (runData) => {
+        // Check if coordinates exist and have at least two points
         if (!runData.coordinates || runData.coordinates.length < 2) {
             return 'N/A';
         }
 
+        // Get start and end timestamps
         const startTime = runData.coordinates[0].timestamp;
         const endTime = runData.coordinates[runData.coordinates.length - 1].timestamp;
         const durationMs = endTime - startTime;
@@ -52,10 +55,12 @@ export default function Track({ initialSavedRuns = {}, onFileManagerRequest, onR
             return 'N/A';
         }
 
+        // Convert duration to hours, minutes, seconds
         const hours = Math.floor(durationMs / (1000 * 60 * 60));
         const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((durationMs % (1000 * 60)) / 1000);
 
+        // Format output string
         if (hours > 0) {
             return `${hours}h ${minutes}m ${seconds}s`;
         } else if (minutes > 0) {
