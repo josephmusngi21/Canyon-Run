@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Track from './pages/Tracker/Track';
-import Maps from './pages/Maps/Maps';
-import Altitude from './pages/Maps/Altitude';
+import SimplifiedMaps from './pages/Maps/Maps';
+import { theme } from './shared/theme';
 
 const VIEWS = {
   TRACKER: 'tracker',
-  MAPS: 'maps',
-  ALTITUDE: 'altitude'
+  MAPS: 'maps'
 };
 
 export default function ViewSelector({ initialSavedRuns = {}, onFileManagerRequest }) {
@@ -57,21 +56,6 @@ export default function ViewSelector({ initialSavedRuns = {}, onFileManagerReque
           🗺️ Map
         </Text>
       </TouchableOpacity>
-
-      <TouchableOpacity
-        style={[
-          styles.tab,
-          currentView === VIEWS.ALTITUDE && styles.activeTab
-        ]}
-        onPress={() => setCurrentView(VIEWS.ALTITUDE)}
-      >
-        <Text style={[
-          styles.tabText,
-          currentView === VIEWS.ALTITUDE && styles.activeTabText
-        ]}>
-          📈 Elevation
-        </Text>
-      </TouchableOpacity>
     </View>
   );
 
@@ -88,21 +72,11 @@ export default function ViewSelector({ initialSavedRuns = {}, onFileManagerReque
         );
       case VIEWS.MAPS:
         return selectedRunData ? (
-          <Maps runData={selectedRunData} />
+          <SimplifiedMaps runData={selectedRunData} />
         ) : (
           <View style={styles.emptyStateContainer}>
             <Text style={styles.emptyStateText}>
               No run selected. Go to the Tracker tab and select "View Map" on a saved run.
-            </Text>
-          </View>
-        );
-      case VIEWS.ALTITUDE:
-        return selectedRunData ? (
-          <Altitude runData={selectedRunData} />
-        ) : (
-          <View style={styles.emptyStateContainer}>
-            <Text style={styles.emptyStateText}>
-              No run selected. Go to the Tracker tab and select "View Map" on a saved run to see elevation data.
             </Text>
           </View>
         );
@@ -130,39 +104,35 @@ export default function ViewSelector({ initialSavedRuns = {}, onFileManagerReque
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.backgroundLight,
   },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.surface,
     paddingTop: 50, // Account for status bar
-    paddingHorizontal: 15,
-    paddingBottom: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
+    paddingHorizontal: theme.spacing.lg,
+    paddingBottom: theme.spacing.sm,
+    ...theme.shadows.default,
   },
   tab: {
     flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    marginHorizontal: 4,
-    borderRadius: 8,
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.xs,
+    marginHorizontal: theme.spacing.xs,
+    borderRadius: theme.borderRadius.md,
     alignItems: 'center',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: theme.colors.surfaceLight,
   },
   activeTab: {
-    backgroundColor: '#2563eb',
+    backgroundColor: theme.colors.primary,
   },
   tabText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#64748b',
+    fontSize: theme.typography.fontSize.sm,
+    fontWeight: theme.typography.fontWeight.semibold,
+    color: theme.colors.text.secondary,
   },
   activeTabText: {
-    color: '#ffffff',
+    color: theme.colors.text.white,
   },
   content: {
     flex: 1,
@@ -171,11 +141,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: theme.spacing.lg,
   },
   emptyStateText: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.secondary,
     textAlign: 'center',
     lineHeight: 24,
   },
